@@ -3,6 +3,7 @@ package git4go
 import (
 	"./testutil"
 	"testing"
+	"bytes"
 )
 
 func Test_LooseExists_Success(t *testing.T) {
@@ -76,5 +77,104 @@ func Test_LooseExistsPrefix_Failure(t *testing.T) {
 	}
 	if err == nil {
 		t.Error("err should be nil:", err)
+	}
+}
+
+func Test_LooseRead(t *testing.T) {
+	testutil.PrepareEmptyWorkDir("test-objects")
+	defer testutil.CleanupEmptyWorkDir()
+	odb, _ := OdbOpen("test-objects")
+
+	testEntries := []*testutil.ObjectData{
+		&testutil.One,
+		&testutil.Commit,
+		&testutil.Tree,
+		&testutil.Tag,
+		&testutil.Zero,
+		&testutil.Two,
+		&testutil.Some,
+	}
+	for _, entry := range testEntries {
+		entry.Write()
+
+		id, _ := NewOid(entry.Id)
+		odbObject, err := odb.Read(id)
+		if err != nil {
+			t.Error("Error should be nil: ", err, entry.Name)
+		} else {
+			if odbObject.Type != TypeString2Type(entry.Type) {
+				t.Error("Type should be same: ", entry.Name)
+			}
+			if bytes.Compare(odbObject.Data, entry.Data) != 0 {
+				t.Error("Data should be same: ", entry.Name)
+			}
+		}
+	}
+}
+
+func Test_LooseReadPrefix(t *testing.T) {
+	testutil.PrepareEmptyWorkDir("test-objects")
+	defer testutil.CleanupEmptyWorkDir()
+	odb, _ := OdbOpen("test-objects")
+
+	testEntries := []*testutil.ObjectData{
+		&testutil.One,
+		&testutil.Commit,
+		&testutil.Tree,
+		&testutil.Tag,
+		&testutil.Zero,
+		&testutil.Two,
+		&testutil.Some,
+	}
+	for _, entry := range testEntries {
+		entry.Write()
+
+		id, _ := NewOidFromPrefix(entry.Id[:8])
+		foundId, odbObject, err := odb.ReadPrefix(id, 8)
+		if err != nil {
+			t.Error("Error should be nil: ", err, entry.Name)
+		} else {
+			if foundId.String() != entry.Id {
+				t.Error("Id should be same: ", entry.Name)
+			}
+			if odbObject.Type != TypeString2Type(entry.Type) {
+				t.Error("Type should be same: ", entry.Name)
+			}
+			if bytes.Compare(odbObject.Data, entry.Data) != 0 {
+				t.Error("Data should be same: ", entry.Name)
+			}
+		}
+	}
+}
+
+func Test_LooseReadHeader(t *testing.T) {
+	testutil.PrepareEmptyWorkDir("test-objects")
+	defer testutil.CleanupEmptyWorkDir()
+	odb, _ := OdbOpen("test-objects")
+
+	testEntries := []*testutil.ObjectData{
+		&testutil.One,
+		&testutil.Commit,
+		&testutil.Tree,
+		&testutil.Tag,
+		&testutil.Zero,
+		&testutil.Two,
+		&testutil.Some,
+	}
+	for _, entry := range testEntries {
+		entry.Write()
+
+		id, _ := NewOid(entry.Id)
+		objType, size, err := odb.ReadHeader(id)
+		if err != nil {
+			t.Error("Error should be nil: ", err, entry.Name)
+		} else {
+			if objType != TypeString2Type(entry.Type) {
+				t.Error("Type should be same: ", entry.Name)
+			}
+			if size != int64(len(entry.Data)) {
+				t.Error("Data size should be same: ", entry.Name)
+			}
+		}
 	}
 }

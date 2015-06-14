@@ -75,3 +75,18 @@ func objectLookupPrefix(repo *Repository, oid *Oid, length int, selectType Objec
 	}
 }
 */
+
+var typeString2Type map[string]ObjectType = map[string]ObjectType{
+	"blob": ObjectBlob,
+	"commit": ObjectCommit,
+	"tree": ObjectTree,
+	"tag": ObjectTag,
+}
+
+func TypeString2Type(typeString string) ObjectType {
+	objType, ok := typeString2Type[typeString]
+	if !ok {
+		return ObjectBad
+	}
+	return objType
+}
