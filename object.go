@@ -1,7 +1,8 @@
 package git4go
 
 import (
-//"errors"
+	"crypto/sha1"
+	"fmt"
 )
 
 type ObjectType int
@@ -14,6 +15,46 @@ const (
 	ObjectBlob   ObjectType = 3
 	ObjectTag    ObjectType = 4
 )
+
+var typeString2Type map[string]ObjectType = map[string]ObjectType{
+	"blob":   ObjectBlob,
+	"commit": ObjectCommit,
+	"tree":   ObjectTree,
+	"tag":    ObjectTag,
+}
+
+var type2TypeString map[ObjectType]string = map[ObjectType]string{
+	ObjectBlob:   "blob",
+	ObjectCommit: "commit",
+	ObjectTree:   "tree",
+	ObjectTag:    "tag",
+}
+
+func TypeString2Type(typeString string) ObjectType {
+	objType, ok := typeString2Type[typeString]
+	if !ok {
+		return ObjectBad
+	}
+	return objType
+}
+
+func (o ObjectType) String() string {
+	typeString, ok := type2TypeString[o]
+	if !ok {
+		return ""
+	}
+	return typeString
+}
+
+func hash(data []byte, objType ObjectType) (*Oid, error) {
+	h := sha1.New()
+	fmt.Fprintf(h, "%s %d\x00", objType.String(), len(data))
+	h.Write(data)
+	sha1Hash := h.Sum(nil)
+	oid := new(Oid)
+	copy(oid[:], sha1Hash[:])
+	return oid, nil
+}
 
 /*
 type Object interface {
@@ -75,18 +116,3 @@ func objectLookupPrefix(repo *Repository, oid *Oid, length int, selectType Objec
 	}
 }
 */
-
-var typeString2Type map[string]ObjectType = map[string]ObjectType{
-	"blob":   ObjectBlob,
-	"commit": ObjectCommit,
-	"tree":   ObjectTree,
-	"tag":    ObjectTag,
-}
-
-func TypeString2Type(typeString string) ObjectType {
-	objType, ok := typeString2Type[typeString]
-	if !ok {
-		return ObjectBad
-	}
-	return objType
-}

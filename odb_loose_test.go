@@ -3,6 +3,8 @@ package git4go
 import (
 	"./testutil"
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -175,6 +177,26 @@ func Test_LooseReadHeader(t *testing.T) {
 			if size != int64(len(entry.Data)) {
 				t.Error("Data size should be same: ", entry.Name)
 			}
+		}
+	}
+}
+
+func Test_LooseWrite(t *testing.T) {
+	testutil.PrepareEmptyWorkDir("test-objects")
+	defer testutil.CleanupEmptyWorkDir()
+	odb, _ := OdbOpen("test-objects")
+
+	data := "Test data\n"
+	oid, err := odb.Write([]byte(data), ObjectBlob)
+	if err != nil {
+		t.Error("write should finish successfully: ", err)
+	} else {
+		if oid.String() != "67b808feb36201507a77f85e6d898f0a2836e4a5" {
+			t.Error("id is wrong: ", oid.String())
+		}
+		_, err = os.Stat(filepath.Join("test-objects", "67", "b808feb36201507a77f85e6d898f0a2836e4a5"))
+		if !os.IsNotExist(err) {
+			t.Error("file is missing")
 		}
 	}
 }

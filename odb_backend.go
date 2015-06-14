@@ -20,6 +20,10 @@ func (b *OdbBackendBase) Priority() int {
 	return b.priority
 }
 
+func (b *OdbBackendBase) IsAlternate() bool {
+	return b.isAlternate
+}
+
 func (b *OdbBackendBase) SameDirectory(info os.FileInfo) bool {
 	return os.SameFile(b.fileInfo, info)
 }
@@ -27,14 +31,14 @@ func (b *OdbBackendBase) SameDirectory(info os.FileInfo) bool {
 type OdbBackend interface {
 	InitBackend(priority int, isAlternate bool, fileInfo os.FileInfo)
 	Priority() int
+	IsAlternate() bool
 	SameDirectory(info os.FileInfo) bool
 	Read(oid *Oid) (*OdbObject, error)
 	ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, error)
 	ReadHeader(oid *Oid) (ObjectType, int64, error)
-	Write(objectType ObjectType, oid *Oid, data []byte) error
+	Write(data []byte, objectType ObjectType) (*Oid, error)
 	Exists(oid *Oid) bool
 	ExistsPrefix(oid *Oid, length int) (*Oid, error)
-	Refresh()
 }
 
 type OdbBackends []OdbBackend

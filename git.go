@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	GIT_OID_RAWSZ             = 20
-	GIT_OID_HEXSZ             = 40
-	GIT_OID_MINPREFIXLEN      = 4
-	GIT_OBJECT_DIR_MODE  uint = 0777
-	GIT_OBJECT_FILE_MODE uint = 0444
+	GIT_OID_RAWSZ               = 20
+	GIT_OID_HEXSZ               = 40
+	GIT_OID_MINPREFIXLEN        = 4
+	GIT_OBJECT_DIR_MODE  uint32 = 0777
+	GIT_OBJECT_FILE_MODE uint32 = 0444
 )
 
 func Discover(start string, acrossFs bool, ceilingDirs []string) (string, error) {

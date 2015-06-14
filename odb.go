@@ -53,6 +53,10 @@ func (o *Odb) AddDefaultBackends(objectsDir string, asAlternates bool, alternate
 	return nil
 }
 
+func (v *Odb) Hash(data []byte, objType ObjectType) (*Oid, error) {
+	return hash(data, objType)
+}
+
 func (o *Odb) Exists(oid *Oid) bool {
 	for _, backend := range o.backends {
 		if backend.Exists(oid) {
@@ -109,6 +113,20 @@ func (o *Odb) ReadHeader(oid *Oid) (ObjectType, int64, error) {
 	}
 
 	return ObjectBad, -1, errors.New(fmt.Sprintf("Odb.ReadHeader: no match for id: %s", oid.String()))
+}
+
+func (o *Odb) Write(data []byte, objType ObjectType) (*Oid, error) {
+	for _, backend := range o.backends {
+		if backend.IsAlternate() {
+			continue
+		}
+		oid, err := backend.Write(data, objType)
+		if err == nil {
+			return oid, nil
+		}
+	}
+
+	return nil, errors.New("Odb.Write: no backend write data")
 }
 
 // internal functions and methods

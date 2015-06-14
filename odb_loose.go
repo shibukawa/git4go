@@ -16,12 +16,12 @@ import (
 type OdbBackendLoose struct {
 	OdbBackendBase
 	objectsDir string
-	dirMode    uint
-	fileMode   uint
+	dirMode    uint32
+	fileMode   uint32
 	doFileSync bool
 }
 
-func NewOdbBackendLoose(objectsDir string, compressionLevel int, doFileSync bool, dirMode, fileMode uint) *OdbBackendLoose {
+func NewOdbBackendLoose(objectsDir string, compressionLevel int, doFileSync bool, dirMode, fileMode uint32) *OdbBackendLoose {
 	if compressionLevel < 0 {
 		compressionLevel = zlib.BestSpeed
 	}
@@ -121,6 +121,7 @@ func (o *OdbBackendLoose) Read(oid *Oid) (*OdbObject, error) {
 			return nil, err
 		}
 		reader, err := zlib.NewReader(bytes.NewReader(content[offset:]))
+		defer reader.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -173,8 +174,22 @@ func (o *OdbBackendLoose) ReadHeader(oid *Oid) (ObjectType, int64, error) {
 	}
 }
 
-func (o *OdbBackendLoose) Write(objectType ObjectType, oid *Oid, data []byte) error {
-	return nil
+func (o *OdbBackendLoose) Write(data []byte, objType ObjectType) (*Oid, error) {
+	oid, err := hash(data, objType)
+	if err != nil {
+		return nil, err
+	}
+	dirName, fileName := oid.PathFormat()
+	dirPath := filepath.Join(o.objectsDir, dirName)
+	os.MkdirAll(dirPath, os.FileMode(GIT_OBJECT_DIR_MODE))
+	file, err := os.OpenFile(filepath.Join(dirPath, fileName), os.O_WRONLY, os.FileMode(GIT_OBJECT_FILE_MODE))
+	defer file.Close()
+	writer := zlib.NewWriter(file)
+	fmt.Fprintf(writer, "%s %d\x00", objType.String(), len(data))
+	writer.Write(data)
+	defer writer.Close()
+
+	return oid, nil
 }
 
 func (o *OdbBackendLoose) Exists(oid *Oid) bool {
@@ -209,7 +224,4 @@ func (o *OdbBackendLoose) ExistsPrefix(oid *Oid, length int) (*Oid, error) {
 	} else {
 		return nil, errors.New("multiple matches in loose objects")
 	}
-}
-
-func (o *OdbBackendLoose) Refresh() {
 }
