@@ -1,25 +1,24 @@
 package git4go
 
 import (
-	"compress/zlib"
-	"os"
-	"path/filepath"
-	"strings"
-	"errors"
 	"bytes"
+	"compress/zlib"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strconv"
-	"fmt"
+	"strings"
 )
 
 type OdbBackendLoose struct {
 	OdbBackendBase
 	objectsDir string
-	dirMode uint
-	fileMode uint
+	dirMode    uint
+	fileMode   uint
 	doFileSync bool
-
 }
 
 func NewOdbBackendLoose(objectsDir string, compressionLevel int, doFileSync bool, dirMode, fileMode uint) *OdbBackendLoose {
@@ -34,15 +33,15 @@ func NewOdbBackendLoose(objectsDir string, compressionLevel int, doFileSync bool
 	}
 	return &OdbBackendLoose{
 		objectsDir: objectsDir,
-		dirMode: dirMode,
-		fileMode: fileMode,
+		dirMode:    dirMode,
+		fileMode:   fileMode,
 		doFileSync: doFileSync,
 	}
 }
 
 func isZlibCompressedData(data []byte) bool {
-	w := uint(data[0]) << 8 + uint(data[1])
-	return (data[0] & 0x8F) == 0x08 && (w % 31) == 0
+	w := uint(data[0])<<8 + uint(data[1])
+	return (data[0]&0x8F) == 0x08 && (w%31) == 0
 }
 
 func parseObjectHeader(data []byte) (ObjectType, int64, int, error) {
@@ -186,7 +185,7 @@ func (o *OdbBackendLoose) Exists(oid *Oid) bool {
 
 func (o *OdbBackendLoose) ExistsPrefix(oid *Oid, length int) (*Oid, error) {
 	dirName, fileName := oid.PathFormat()
-	prefix := fileName[:length - 2]
+	prefix := fileName[:length-2]
 	file, err := os.Open(filepath.Join(o.objectsDir, dirName))
 	if err != nil {
 		return nil, err
@@ -214,4 +213,3 @@ func (o *OdbBackendLoose) ExistsPrefix(oid *Oid, length int) (*Oid, error) {
 
 func (o *OdbBackendLoose) Refresh() {
 }
-

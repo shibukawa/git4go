@@ -2,8 +2,8 @@ package git4go
 
 import (
 	"./testutil"
-	"testing"
 	"bytes"
+	"testing"
 )
 
 func Test_LooseExists_Success(t *testing.T) {

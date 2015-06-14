@@ -5,9 +5,9 @@ import (
 )
 
 type OdbBackendBase struct {
-	priority int
+	priority    int
 	isAlternate bool
-	fileInfo os.FileInfo
+	fileInfo    os.FileInfo
 }
 
 func (b *OdbBackendBase) InitBackend(priority int, isAlternate bool, fileInfo os.FileInfo) {
@@ -38,6 +38,7 @@ type OdbBackend interface {
 }
 
 type OdbBackends []OdbBackend
+
 func (a OdbBackends) Len() int           { return len(a) }
 func (a OdbBackends) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a OdbBackends) Less(i, j int) bool { return a[i].Priority() < a[j].Priority() }
