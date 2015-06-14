@@ -64,7 +64,7 @@ func (r *RefDb) Lookup(name string) (*Reference, error) {
 	refString := string(refFile)
 	if strings.HasPrefix(refString, GIT_SYMREF) {
 		ref := &Reference{
-			refType: ReferenceSymbolic,
+			refType:        ReferenceSymbolic,
 			targetSymbolic: strings.TrimSpace(refString[len(GIT_SYMREF):]),
 		}
 		return ref, nil

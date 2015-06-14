@@ -131,3 +131,24 @@ func PrepareWorkspace(workspacePath string) error {
 func CleanupWorkspace() error {
 	return CleanupFixture()
 }
+
+func PrepareEmptyWorkDir(workspacePath string) error {
+	if backupWorkspacePath != "" {
+		return errors.New("Workspace is initialized")
+	}
+	_, err := os.Stat(workspacePath)
+	if !os.IsNotExist(err) {
+		return errors.New(fmt.Sprintf("Workspace name %s exists already", workspacePath))
+	}
+	currentWorkspacePath = workspacePath
+	return os.MkdirAll(workspacePath, 0777)
+}
+
+func CleanupEmptyWorkDir() error {
+	if currentWorkspacePath == "" {
+		return errors.New("Workspace is not initialized")
+	}
+	os.RemoveAll(currentWorkspacePath)
+	currentWorkspacePath = ""
+	return nil
+}

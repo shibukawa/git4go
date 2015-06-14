@@ -7,9 +7,11 @@ import (
 )
 
 const (
-	GIT_OID_RAWSZ        = 20
-	GIT_OID_HEXSZ        = 40
-	GIT_OID_MINPREFIXLEN = 4
+	GIT_OID_RAWSZ             = 20
+	GIT_OID_HEXSZ             = 40
+	GIT_OID_MINPREFIXLEN      = 4
+	GIT_OBJECT_DIR_MODE  uint = 0777
+	GIT_OBJECT_FILE_MODE uint = 0444
 )
 
 func Discover(start string, acrossFs bool, ceilingDirs []string) (string, error) {
@@ -35,9 +37,9 @@ func NewOid(s string) (*Oid, error) {
 	}
 	o := new(Oid)
 
-	slice, error := hex.DecodeString(s)
-	if error != nil {
-		return nil, error
+	slice, err := hex.DecodeString(s)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(slice) != 20 {
@@ -47,8 +49,31 @@ func NewOid(s string) (*Oid, error) {
 	return o, nil
 }
 
+func NewOidFromPrefix(s string) (*Oid, error) {
+	if len(s) > GIT_OID_HEXSZ {
+		return nil, errors.New("string is too long for oid")
+	}
+	slice, err := hex.DecodeString(s)
+	if err != nil {
+		return nil, err
+	}
+	length := len(s)
+
+	shortOid := new(Oid)
+	copy(shortOid[:], slice[:(length+1)/2])
+	if (length % 2) == 1 {
+		shortOid[length/2] &= 0xF0
+	}
+	return shortOid, nil
+}
+
 func (oid *Oid) String() string {
 	return hex.EncodeToString(oid[:])
+}
+
+func (oid *Oid) PathFormat() (string, string) {
+	idString := oid.String()
+	return idString[:2], idString[2:]
 }
 
 func (oid *Oid) Cmp(oid2 *Oid) int {

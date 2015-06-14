@@ -91,3 +91,26 @@ func Test_Workspace_withSubmodules(t *testing.T) {
 		t.Errorf("it should read correct content in submodule's .git")
 	}
 }
+
+func Test_EmptyWorkDir_doNothing(t *testing.T) {
+	e := PrepareEmptyWorkDir("testworkfolder")
+	if e != nil {
+		t.Errorf("e should be nil")
+	}
+	e2 := CleanupEmptyWorkDir()
+	if e2 != nil {
+		t.Errorf("e2 should be nil")
+	}
+}
+
+func Test_EmptyWorkDir_Failure(t *testing.T) {
+	e := PrepareEmptyWorkDir("testdata")
+	if e == nil {
+		t.Error("e should be error", e)
+	}
+	e2 := CleanupEmptyWorkDir()
+	if e2 == nil {
+		t.Error("e2 should be error", e2)
+	}
+}
+

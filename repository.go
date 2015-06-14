@@ -29,6 +29,8 @@ type Repository struct {
 	isBare         bool
 	config         *Config
 	refDb          *RefDb
+	odb            *Odb
+	//cache          *Cache
 }
 
 func OpenRepository(path string) (*Repository, error) {
@@ -61,6 +63,7 @@ func openRepository(path string, flags uint32) (*Repository, error) {
 		pathRepository: path,
 		pathGitLink:    link_path,
 		isBare:         (flags & GIT_REPOSITORY_OPEN_BARE) != 0,
+		//cache:          NewCache(),
 	}
 	config := repo.Config()
 	loadWorkDir(repo, config, parent)
