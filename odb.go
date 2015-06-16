@@ -47,8 +47,10 @@ func (o *Odb) AddDefaultBackends(objectsDir string, asAlternates bool, alternate
 	}
 	loose := NewOdbBackendLoose(objectsDir, -1, false, 0, 0)
 	o.addBackendInternal(loose, GIT_LOOSE_PRIORITY, asAlternates, info)
-	//packed := &OdbBackendLoose{}
-	//o.addBackendInternal(packed, GIT_PACKED_PRIORITY, asAlternates)
+	packed := NewOdbBackendPacked(objectsDir)
+	if packed != nil {
+		o.addBackendInternal(packed, GIT_PACKED_PRIORITY, asAlternates, info)
+	}
 	o.loadAlternates(objectsDir, alternateDepth)
 	return nil
 }

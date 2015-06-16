@@ -39,6 +39,7 @@ type OdbBackend interface {
 	Write(data []byte, objectType ObjectType) (*Oid, error)
 	Exists(oid *Oid) bool
 	ExistsPrefix(oid *Oid, length int) (*Oid, error)
+	Refresh() error
 }
 
 type OdbBackends []OdbBackend

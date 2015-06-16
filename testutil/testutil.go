@@ -15,16 +15,16 @@ var currentWorkspacePath string
 
 func copyFile(source string, dest string) (err error) {
 	sourcefile, err := os.Open(source)
+	defer sourcefile.Close()
 	if err != nil {
 		return err
 	}
-	defer sourcefile.Close()
 
 	destFile, err := os.Create(dest)
+	defer destFile.Close()
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
 
 	_, err = io.Copy(destFile, sourcefile)
 	if err == nil {
@@ -48,6 +48,7 @@ func copyDir(source string, dest string) (err error) {
 		return err
 	}
 	directory, _ := os.Open(source)
+	defer directory.Close()
 	objects, err := directory.Readdir(-1)
 
 	for _, obj := range objects {

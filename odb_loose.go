@@ -225,3 +225,7 @@ func (o *OdbBackendLoose) ExistsPrefix(oid *Oid, length int) (*Oid, error) {
 		return nil, errors.New("multiple matches in loose objects")
 	}
 }
+
+func (o *OdbBackendLoose) Refresh() error {
+	return nil
+}

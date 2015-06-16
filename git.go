@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"runtime"
+	"strings"
 )
 
 const (
@@ -100,7 +102,14 @@ func (oid *Oid) IsZero() bool {
 }
 
 func (oid *Oid) NCmp(oid2 *Oid, n uint) int {
-	return bytes.Compare(oid[:n], oid2[:n])
+	result := bytes.Compare(oid[:n/2], oid2[:n/2])
+	if result == 0 && n%2 == 1 {
+		if (oid[n/2+1]^oid2[n/2+1])&0xf0 != 0 {
+			return 1
+		}
+		return 0
+	}
+	return result
 }
 
 /*func ShortenOids(ids []*Oid, minlen int) (int, error) {
@@ -124,3 +133,13 @@ func (oid *Oid) NCmp(oid2 *Oid, n uint) int {
 	return int(ret), nil
 }
 */
+
+func Is64bit() bool {
+	return strings.HasSuffix(runtime.GOARCH, "64")
+}
+
+// todo: this code doesn't work on spark
+func ntohl(input uint32) uint32 {
+	return (input&0xff)<<24 | (input&0xff00)<<8 |
+		(input&0xff0000)>>8 | (input&0xff000000)>>24
+}
