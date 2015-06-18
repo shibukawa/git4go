@@ -3,9 +3,9 @@ package git4go
 // test from https://github.com/tarruda/node-git-core
 
 import (
-	"testing"
-	"encoding/hex"
 	"bytes"
+	"encoding/hex"
+	"testing"
 	//"fmt"
 )
 
@@ -73,7 +73,7 @@ func Test_Delta_and_Apply_BinaryData(t *testing.T) {
 	}
 
 	var b bytes.Buffer
-	for i := 0; i < (1 << 13) - 10; i++ {
+	for i := 0; i < (1<<13)-10; i++ {
 		a.WriteByte(200)
 	}
 	for i := 0; i < 10; i++ {

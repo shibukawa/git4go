@@ -8,12 +8,14 @@ import (
 type ObjectType int
 
 const (
-	ObjectAny    ObjectType = -2
-	ObjectBad    ObjectType = -2
-	ObjectCommit ObjectType = 1
-	ObjectTree   ObjectType = 2
-	ObjectBlob   ObjectType = 3
-	ObjectTag    ObjectType = 4
+	ObjectAny      ObjectType = -2
+	ObjectBad      ObjectType = -2
+	ObjectCommit   ObjectType = 1
+	ObjectTree     ObjectType = 2
+	ObjectBlob     ObjectType = 3
+	ObjectTag      ObjectType = 4
+	ObjectOfsDelta ObjectType = 6
+	ObjectRefDelta ObjectType = 7
 )
 
 var typeString2Type map[string]ObjectType = map[string]ObjectType{

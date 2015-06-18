@@ -1,10 +1,10 @@
 package git4go
 
 import (
-	"errors"
-	"math"
 	"bytes"
+	"errors"
 	"fmt"
+	"math"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 
 func CreateDelta(source, target []byte, maxDeltaSize uint64) ([]byte, error) {
 	opcodes := new(bytes.Buffer)
-	count := int(math.Ceil(float64(len(source))/ 17.0))
+	count := int(math.Ceil(float64(len(source)) / 17.0))
 	blocks := NewBlocks(count)
 
 	encodeHeader(opcodes, source, target)
@@ -39,7 +39,7 @@ func CreateDelta(source, target []byte, maxDeltaSize uint64) ([]byte, error) {
 			if match != nil {
 				insertLength += match.length
 			}
-			if bufferedLength + insertLength <= len(insertBuffer) {
+			if bufferedLength+insertLength <= len(insertBuffer) {
 				copy(insertBuffer[bufferedLength:], target[i:i+insertLength])
 				bufferedLength += insertLength
 			} else {
@@ -145,16 +145,16 @@ func ApplyDelta(base, delta []byte) ([]byte, error) {
 // internal functions
 
 type DeltaIndexEntry struct {
-	Ptr int
-	Val uint
+	Ptr  int
+	Val  uint
 	Next *DeltaIndexEntry
 }
 
 type DeltaIndex struct {
-	MemSize uint64
-	Source []byte
+	MemSize  uint64
+	Source   []byte
 	HashMask uint32
-	Hash []*DeltaIndexEntry
+	Hash     []*DeltaIndexEntry
 }
 
 func encodeSize(opcodes *bytes.Buffer, size uint32) {
@@ -175,7 +175,7 @@ func encodeHeader(opcodes *bytes.Buffer, src, target []byte) {
 
 func sliceBlock(buffer []byte, pos int) []byte {
 	j := pos
-	for j < len(buffer) && buffer[j] != 10 && (j - pos < 90)  {
+	for j < len(buffer) && buffer[j] != 10 && (j-pos < 90) {
 		j++
 	}
 	if j < len(buffer) && buffer[j] == 10 {
@@ -195,7 +195,7 @@ func chooseMatch(source []byte, sourcePositions []int, target []byte, targetPos 
 	for i, spos := range sourcePositions {
 		length := 0
 		tpos := targetPos
-		if rv != nil && spos < (rv.offset + rv.length) {
+		if rv != nil && spos < (rv.offset+rv.length) {
 			continue
 		}
 		for tpos < len(target) && spos < len(source) && source[spos] == target[tpos] {
@@ -232,33 +232,33 @@ func emitCopy(opcodes *bytes.Buffer, source []byte, offset, length int) {
 	ops := make([]byte, 0, 7)
 	code := byte(0x80)
 
-	if offset & 0xff != 0 {
-		ops = append(ops, byte(offset & 0xff))
+	if offset&0xff != 0 {
+		ops = append(ops, byte(offset&0xff))
 		code |= 0x01
 	}
-	if offset & 0xff00 != 0 {
-		ops = append(ops, byte((offset & 0xff00) >> 8))
+	if offset&0xff00 != 0 {
+		ops = append(ops, byte((offset&0xff00)>>8))
 		code |= 0x02
 	}
-	if offset & 0xff0000 != 0 {
-		ops = append(ops, byte((offset & 0xff0000) >> 16))
+	if offset&0xff0000 != 0 {
+		ops = append(ops, byte((offset&0xff0000)>>16))
 		code |= 0x04
 	}
-	if offset & 0xff000000 != 0 {
-		ops = append(ops, byte((offset & 0xff000000) >> 24))
+	if offset&0xff000000 != 0 {
+		ops = append(ops, byte((offset&0xff000000)>>24))
 		code |= 0x08
 	}
 
-	if length & 0xff != 0 {
-		ops = append(ops, byte(length & 0xff))
+	if length&0xff != 0 {
+		ops = append(ops, byte(length&0xff))
 		code |= 0x10
 	}
-	if length & 0xff00 != 0 {
-		ops = append(ops, byte((length & 0xff00) >> 8))
+	if length&0xff00 != 0 {
+		ops = append(ops, byte((length&0xff00)>>8))
 		code |= 0x20
 	}
-	if length & 0xff0000 != 0 {
-		ops = append(ops, byte((length & 0xff0000) >> 16))
+	if length&0xff0000 != 0 {
+		ops = append(ops, byte((length&0xff0000)>>16))
 		code |= 0x40
 	}
 	opcodes.WriteByte(code)
@@ -266,14 +266,14 @@ func emitCopy(opcodes *bytes.Buffer, source []byte, offset, length int) {
 }
 
 func nextSize(buffer []byte, offset int) (int, int) {
-    b := buffer[offset]
+	b := buffer[offset]
 	offset++
 	rv := int(b & 0x7f)
 	var shift uint = 7
 
 	for (b & 0x80) != 0 {
 		b = buffer[offset]
-		rv |= int(b & 0x7f) << shift
+		rv |= int(b&0x7f) << shift
 		offset++
 		shift += 7
 	}
@@ -305,13 +305,13 @@ func hashBlock(buffer []byte) uint32 {
 }
 
 type Blocks struct {
-	n int
+	n       int
 	buckets []Bucket
 }
 
 func NewBlocks(n int) *Blocks {
-	return &Blocks {
-		n: n,
+	return &Blocks{
+		n:       n,
 		buckets: make([]Bucket, n),
 	}
 }
@@ -328,7 +328,7 @@ func (b *Blocks) get(key []byte) []int {
 }
 
 type Bucket struct {
-	keys [][]byte
+	keys   [][]byte
 	values [][]int
 }
 
