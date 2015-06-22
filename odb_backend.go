@@ -35,7 +35,7 @@ type OdbBackend interface {
 	SameDirectory(info os.FileInfo) bool
 	Read(oid *Oid) (*OdbObject, error)
 	ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, error)
-	ReadHeader(oid *Oid) (ObjectType, int64, error)
+	ReadHeader(oid *Oid) (ObjectType, uint64, error)
 	Write(data []byte, objectType ObjectType) (*Oid, error)
 	Exists(oid *Oid) bool
 	ExistsPrefix(oid *Oid, length int) (*Oid, error)

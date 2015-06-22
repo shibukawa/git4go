@@ -73,7 +73,6 @@ func CreateDelta(source, target []byte, maxDeltaSize uint64) ([]byte, error) {
 	}
 
 	if i != len(target) {
-		fmt.Println(i, len(target))
 		return nil, errors.New("error computing delta buffer")
 	} else {
 		return opcodes.Bytes(), nil
@@ -82,44 +81,44 @@ func CreateDelta(source, target []byte, maxDeltaSize uint64) ([]byte, error) {
 
 func ApplyDelta(base, delta []byte) ([]byte, error) {
 	baseSize, targetSize, offset := decodeHeader(delta)
-	if baseSize != len(base) {
+	if baseSize != uint64(len(base)) {
 		return nil, errors.New(fmt.Sprintf("invalid base buffer length in header: %d, %d\n", baseSize, len(base)))
 	}
 	rv := make([]byte, targetSize)
-	rvOffset := 0
+	var rvOffset uint64
 
-	for offset < len(delta) {
+	for offset < uint64(len(delta)) {
 		opcode := delta[offset]
 		offset++
 		if (opcode & 0x80) != 0 {
-			baseOffset := 0
-			copyLength := 0
+			var baseOffset uint64
+			var copyLength uint64
 			if (opcode & 0x01) != 0 {
-				baseOffset = int(delta[offset])
+				baseOffset = uint64(delta[offset])
 				offset++
 			}
 			if (opcode & 0x02) != 0 {
-				baseOffset |= int(delta[offset]) << 8
+				baseOffset |= uint64(delta[offset]) << 8
 				offset++
 			}
 			if (opcode & 0x04) != 0 {
-				baseOffset |= int(delta[offset]) << 16
+				baseOffset |= uint64(delta[offset]) << 16
 				offset++
 			}
 			if (opcode & 0x08) != 0 {
-				baseOffset |= int(delta[offset]) << 24
+				baseOffset |= uint64(delta[offset]) << 24
 				offset++
 			}
 			if (opcode & 0x10) != 0 {
-				copyLength = int(delta[offset])
+				copyLength = uint64(delta[offset])
 				offset++
 			}
 			if (opcode & 0x20) != 0 {
-				copyLength |= int(delta[offset]) << 8
+				copyLength |= uint64(delta[offset]) << 8
 				offset++
 			}
 			if (opcode & 0x40) != 0 {
-				copyLength |= int(delta[offset]) << 16
+				copyLength |= uint64(delta[offset]) << 16
 				offset++
 			}
 			if copyLength == 0 {
@@ -128,7 +127,7 @@ func ApplyDelta(base, delta []byte) ([]byte, error) {
 			copy(rv[rvOffset:], base[baseOffset:baseOffset+copyLength])
 			rvOffset += copyLength
 		} else if opcode != 0 {
-			copyLength := int(opcode)
+			copyLength := uint64(opcode)
 			copy(rv[rvOffset:], delta[offset:offset+copyLength])
 			offset += copyLength
 			rvOffset += copyLength
@@ -265,28 +264,25 @@ func emitCopy(opcodes *bytes.Buffer, source []byte, offset, length int) {
 	opcodes.Write(ops)
 }
 
-func nextSize(buffer []byte, offset int) (int, int) {
+func nextSize(buffer []byte, offset uint64) (uint64, uint64) {
 	b := buffer[offset]
 	offset++
-	rv := int(b & 0x7f)
+	rv := uint64(b & 0x7f)
 	var shift uint = 7
 
 	for (b & 0x80) != 0 {
 		b = buffer[offset]
-		rv |= int(b&0x7f) << shift
+		rv |= uint64(b&0x7f) << shift
 		offset++
 		shift += 7
 	}
 	return rv, offset
 }
 
-func decodeHeader(buffer []byte) (int, int, int) {
-	offset := 0
-	var sourceLength int
-	var targetLength int
+func decodeHeader(buffer []byte) (sourceLength, targetLength, offset uint64) {
 	sourceLength, offset = nextSize(buffer, offset)
 	targetLength, offset = nextSize(buffer, offset)
-	return sourceLength, targetLength, offset
+	return
 }
 
 // internal data structure

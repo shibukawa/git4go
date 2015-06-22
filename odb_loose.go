@@ -44,9 +44,9 @@ func isZlibCompressedData(data []byte) bool {
 	return (data[0]&0x8F) == 0x08 && (w%31) == 0
 }
 
-func parseObjectHeader(data []byte) (ObjectType, int64, int, error) {
+func parseObjectHeader(data []byte) (ObjectType, uint64, int, error) {
 	resultType := ObjectBad
-	var size int64
+	var size uint64
 	offset := 0
 	typeEnd := 0
 	var err error
@@ -60,9 +60,9 @@ func parseObjectHeader(data []byte) (ObjectType, int64, int, error) {
 	}
 	for ; offset < len(data); offset++ {
 		if data[offset] == 0 {
-			size, err = strconv.ParseInt(string(data[typeEnd:offset]), 10, 64)
+			size, err = strconv.ParseUint(string(data[typeEnd:offset]), 10, 64)
 			if err != nil {
-				return ObjectBad, -1, 0, err
+				return ObjectBad, 0, 0, err
 			}
 			offset++
 			break
@@ -71,22 +71,21 @@ func parseObjectHeader(data []byte) (ObjectType, int64, int, error) {
 	return resultType, size, offset, nil
 }
 
-func parseBinaryObjectHeader(data []byte) (ObjectType, int64, int, error) {
+func parseBinaryObjectHeader(data []byte) (ObjectType, uint64, int, error) {
 	if len(data) == 0 {
 		return ObjectBad, 0, 0, errors.New("parseBinaryObjectHeader: input is empty")
 	}
 	c := int(data[0])
 	resultType := ObjectType((c >> 4) & 7)
-	var size int64 = int64(c & 15)
+	size := uint64(c & 15)
 	var shift uint = 4
 	offset := 1
 	for (c & 0x80) != 0 {
 		if len(data) <= offset {
 			return ObjectBad, 0, 0, errors.New("parseBinaryObjectHeader: input is too short")
 		}
-		s := int64(data[offset])
 		offset++
-		size += (s & 0x7f) << shift
+		size += (uint64(data[offset]) & 0x7f) << shift
 		shift += 7
 	}
 	return resultType, size, offset, nil
@@ -108,7 +107,6 @@ func (o *OdbBackendLoose) Read(oid *Oid) (*OdbObject, error) {
 		data := buffer.Bytes()
 		objType, _, offset, err := parseObjectHeader(data)
 		if err != nil {
-			fmt.Println(err)
 			return nil, err
 		}
 		return &OdbObject{
@@ -146,29 +144,29 @@ func (o *OdbBackendLoose) ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, er
 	return foundId, obj, nil
 }
 
-func (o *OdbBackendLoose) ReadHeader(oid *Oid) (ObjectType, int64, error) {
+func (o *OdbBackendLoose) ReadHeader(oid *Oid) (ObjectType, uint64, error) {
 	dirName, fileName := oid.PathFormat()
 	content, err := ioutil.ReadFile(filepath.Join(o.objectsDir, dirName, fileName))
 	if err != nil {
-		return ObjectBad, -1, err
+		return ObjectBad, 0, err
 	}
 	if isZlibCompressedData(content) {
 		reader, err := zlib.NewReader(bytes.NewReader(content))
 		if err != nil {
-			return ObjectBad, -1, err
+			return ObjectBad, 0, err
 		}
 		var buffer bytes.Buffer
 		io.CopyN(&buffer, reader, 64)
 		data := buffer.Bytes()
 		objType, size, _, err := parseObjectHeader(data)
 		if err != nil {
-			return ObjectBad, -1, err
+			return ObjectBad, 0, err
 		}
 		return objType, size, nil
 	} else {
 		objType, size, _, err := parseBinaryObjectHeader(content)
 		if err != nil {
-			return ObjectBad, -1, err
+			return ObjectBad, 0, err
 		}
 		return objType, size, nil
 	}

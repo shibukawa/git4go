@@ -174,7 +174,7 @@ func Test_LooseReadHeader(t *testing.T) {
 			if objType != TypeString2Type(entry.Type) {
 				t.Error("Type should be same: ", entry.Name)
 			}
-			if size != int64(len(entry.Data)) {
+			if size != uint64(len(entry.Data)) {
 				t.Error("Data size should be same: ", entry.Name)
 			}
 		}

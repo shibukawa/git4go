@@ -3,6 +3,7 @@ package git4go
 import (
 	"./testutil"
 	"testing"
+	//"fmt"
 )
 
 func Test_PackedOdb_Exists(t *testing.T) {
@@ -35,7 +36,7 @@ func Test_PackedOdb_ExistsPrefix(t *testing.T) {
 	}
 }
 
-/*func Test_PackedOdb_Read(t *testing.T) {
+func Test_PackedOdb_ReadAndReadHeader(t *testing.T) {
 	testutil.PrepareWorkspace("test_resources/testrepo.git")
 	defer testutil.CleanupWorkspace()
 	odb, _ := OdbOpen("test_resources/testrepo.git/objects")
@@ -48,7 +49,18 @@ func Test_PackedOdb_ExistsPrefix(t *testing.T) {
 		}
 		if obj == nil {
 			t.Error("Can't read object", i)
+		} else {
+			objType, size, err := odb.ReadHeader(oid)
+			if err != nil {
+				t.Error("err should be nil: ", i, err)
+			}
+			if obj.Type != objType {
+				t.Error("type is wrong", i, obj.Type, objType, oid.String())
+			}
+			if uint64(len(obj.Data)) != size {
+				t.Error("size is wrong", i, len(obj.Data), size, oid.String())
+			}
+			//fmt.Println(string(obj.Data))
 		}
 	}
 }
-*/

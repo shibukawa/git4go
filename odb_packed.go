@@ -28,15 +28,25 @@ func NewOdbBackendPacked(objectsDir string) *OdbBackendPacked {
 }
 
 func (o *OdbBackendPacked) Read(oid *Oid) (*OdbObject, error) {
-	return nil, errors.New("not implemented")
+	entry, err := o.findEntry(oid)
+	if err != nil {
+		return nil, err
+	}
+	obj, _, err := entry.PackFile.unpack(entry.Offset)
+	return obj, err
 }
 
 func (o *OdbBackendPacked) ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, error) {
 	return nil, nil, errors.New("not implemented")
 }
 
-func (o *OdbBackendPacked) ReadHeader(oid *Oid) (ObjectType, int64, error) {
-	return ObjectBad, 0, errors.New("not implemented")
+func (o *OdbBackendPacked) ReadHeader(oid *Oid) (ObjectType, uint64, error) {
+	entry, err := o.findEntry(oid)
+	if err != nil {
+		return ObjectBad, 0, err
+	}
+	objType, size, err := entry.PackFile.resolveHeader(entry.Offset)
+	return objType, size, err
 }
 
 func (o *OdbBackendPacked) Write(data []byte, objType ObjectType) (*Oid, error) {
@@ -44,33 +54,17 @@ func (o *OdbBackendPacked) Write(data []byte, objType ObjectType) (*Oid, error) 
 }
 
 func (o *OdbBackendPacked) Exists(oid *Oid) bool {
-	_, notFound, err := o.findEntry(oid)
-	if err == nil {
-		return true
-	}
-	if notFound {
-		err = o.Refresh()
-		if err != nil {
-			return false
-		}
-	}
-	_, _, err = o.findEntry(oid)
+	_, err := o.findEntry(oid)
 	return err == nil
 }
 
 func (o *OdbBackendPacked) ExistsPrefix(shortOid *Oid, length int) (*Oid, error) {
-	entry, notFound, err := o.findEntryByPrefix(shortOid, length)
-	if err == nil {
-		return entry.Sha1, nil
+	entry, err := o.findEntryByPrefix(shortOid, length)
+	if err != nil {
+		return nil, err
+	} else {
+		return entry.Sha1, err
 	}
-	if notFound {
-		err = o.Refresh()
-		if err != nil {
-			return nil, err
-		}
-	}
-	entry, _, err = o.findEntryByPrefix(shortOid, length)
-	return entry.Sha1, err
 }
 
 func (o *OdbBackendPacked) Refresh() error {
@@ -103,7 +97,7 @@ func (o *OdbBackendPacked) Refresh() error {
 		if found {
 			continue
 		}
-		pack, err := mwindowGetPack(path)
+		pack, err := GetPack(path)
 		if err == nil {
 			o.packs = append(o.packs, pack)
 		}
@@ -113,7 +107,22 @@ func (o *OdbBackendPacked) Refresh() error {
 
 // internal functions
 
-func (o *OdbBackendPacked) findEntry(oid *Oid) (*PackEntry, bool, error) {
+func (o *OdbBackendPacked) findEntry(oid *Oid) (*PackEntry, error) {
+	entry, notFound, err := o.findEntryInternal(oid)
+	if err == nil {
+		return entry, nil
+	}
+	if notFound {
+		err = o.Refresh()
+		if err != nil {
+			return nil, err
+		}
+	}
+	entry, _, err = o.findEntryInternal(oid)
+	return entry, err
+}
+
+func (o *OdbBackendPacked) findEntryInternal(oid *Oid) (*PackEntry, bool, error) {
 	if o.lastFound != nil {
 		entry, notFound, err := o.lastFound.findEntry(oid, GIT_OID_HEXSZ)
 		if !notFound && err != nil {
@@ -139,7 +148,22 @@ func (o *OdbBackendPacked) findEntry(oid *Oid) (*PackEntry, bool, error) {
 	return nil, true, errors.New("failed to find pack entry: " + oid.String())
 }
 
-func (o *OdbBackendPacked) findEntryByPrefix(shortOid *Oid, length int) (*PackEntry, bool, error) {
+func (o *OdbBackendPacked) findEntryByPrefix(shortOid *Oid, length int) (*PackEntry, error) {
+	entry, notFound, err := o.findEntryByPrefixInternal(shortOid, length)
+	if err == nil {
+		return entry, nil
+	}
+	if notFound {
+		err = o.Refresh()
+		if err != nil {
+			return nil, err
+		}
+	}
+	entry, _, err = o.findEntryByPrefixInternal(shortOid, length)
+	return entry, err
+}
+
+func (o *OdbBackendPacked) findEntryByPrefixInternal(shortOid *Oid, length int) (*PackEntry, bool, error) {
 	var foundEntry *PackEntry = nil
 	if o.lastFound != nil {
 		entry, notFound, err := o.lastFound.findEntry(shortOid, length)

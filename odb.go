@@ -106,7 +106,7 @@ func (o *Odb) ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, error) {
 	return nil, nil, errors.New(fmt.Sprintf("Odb.ReadPrefix: no match for id: %s", oid.String()))
 }
 
-func (o *Odb) ReadHeader(oid *Oid) (ObjectType, int64, error) {
+func (o *Odb) ReadHeader(oid *Oid) (ObjectType, uint64, error) {
 	for _, backend := range o.backends {
 		objType, size, err := backend.ReadHeader(oid)
 		if err == nil {
@@ -114,7 +114,7 @@ func (o *Odb) ReadHeader(oid *Oid) (ObjectType, int64, error) {
 		}
 	}
 
-	return ObjectBad, -1, errors.New(fmt.Sprintf("Odb.ReadHeader: no match for id: %s", oid.String()))
+	return ObjectBad, 0, errors.New(fmt.Sprintf("Odb.ReadHeader: no match for id: %s", oid.String()))
 }
 
 func (o *Odb) Write(data []byte, objType ObjectType) (*Oid, error) {
