@@ -2,6 +2,7 @@ package git4go
 
 import (
 	"crypto/sha1"
+	"errors"
 	"fmt"
 )
 
@@ -26,10 +27,12 @@ var typeString2Type map[string]ObjectType = map[string]ObjectType{
 }
 
 var type2TypeString map[ObjectType]string = map[ObjectType]string{
-	ObjectBlob:   "blob",
-	ObjectCommit: "commit",
-	ObjectTree:   "tree",
-	ObjectTag:    "tag",
+	ObjectBlob:     "blob",
+	ObjectCommit:   "commit",
+	ObjectTree:     "tree",
+	ObjectTag:      "tag",
+	ObjectOfsDelta: "ofs-delta",
+	ObjectRefDelta: "ref-delta",
 }
 
 func TypeString2Type(typeString string) ObjectType {
@@ -58,12 +61,10 @@ func hash(data []byte, objType ObjectType) (*Oid, error) {
 	return oid, nil
 }
 
-/*
 type Object interface {
 	Id() *Oid
 	Type() ObjectType
 	Owner() *Repository
-	Size() int
 }
 
 type GitObject struct {
@@ -79,42 +80,44 @@ func (o *GitObject) Id() *Oid {
 	return o.oid
 }
 
-func (r *Repository) Lookup(id *Oid) (Object, error) {
-	return objectLookupPrefix(r, id, GIT_OID_HEXSZ, ObjectAny)
+func (r *Repository) Lookup(oid *Oid) (Object, error) {
+	return objectLookupPrefix(r, oid, GitOidHexSize, ObjectAny)
 }
 
-func (r *Repository) LookupPrefix(id *Oid, length int) (Object, error) {
-	return objectLookupPrefix(r, id, length, ObjectAny)
+func (r *Repository) LookupPrefix(oid *Oid, length int) (Object, error) {
+	return objectLookupPrefix(r, oid, length, ObjectAny)
 }
 
 func objectLookupPrefix(repo *Repository, oid *Oid, length int, selectType ObjectType) (Object, error) {
-	if length < GIT_OID_MINPREFIXLEN {
-		return errors.New("Ambiguous lookup - OID prefix is too short")
+	if length < GitOidMinimumPrefixLength {
+		return nil, errors.New("Ambiguous lookup - OID prefix is too short")
 	}
 
-	if length > GIT_OID_HEXSZ {
-		length = GIT_OID_HEXSZ
+	if length > GitOidHexSize {
+		length = GitOidHexSize
 	}
 
-	if length == GIT_OID_HEXSZ {
-		cachedObject := repo.cache.Get(oid)
-		if cachedObject != nil {
-			if selectType != ObjectAny && selectType != cachedObject.Type() {
-				return nil, errors.New("The requested type does not match the type in ODB")
-			}
-			return cachedObject, nil
-		} else {
-			odb, _ := repo.Odb()
-			return odb.read(oid)
-		}
+	var rawObj *OdbObject
+	var resultOid *Oid
+	odb, err := repo.Odb()
+	if err != nil {
+		return nil, err
+	}
+	if length == GitOidHexSize {
+		rawObj, err = odb.Read(oid)
+		resultOid = oid
 	} else {
-		shortOid := new(Oid)
-		copy(shortOid[:], oid[:(length+1)/2])
-		if (length % 2) == 1 {
-			shortOid[len/2] &= 0xF0
-		}
-		odb, _ := repo.Odb()
-		return odb.readPrefix(oid, length)
+		resultOid, rawObj, err = odb.ReadPrefix(oid, length)
 	}
+	if err != nil {
+		return nil, err
+	}
+	if selectType != ObjectAny && rawObj.Type != selectType {
+		return nil, errors.New("The requested type does not match the type in ODB")
+	}
+	switch rawObj.Type {
+	case ObjectBlob:
+		return newBlob(repo, resultOid, rawObj.Data), nil
+	}
+	return nil, errors.New("Invalid type:" + selectType.String())
 }
-*/

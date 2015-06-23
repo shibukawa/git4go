@@ -18,7 +18,11 @@ const (
 
 func (r *Repository) Odb() (odb *Odb, err error) {
 	if r.odb == nil {
-		r.odb = &Odb{}
+		odb, err := OdbOpen(filepath.Join(r.pathRepository, GitObjectsDir))
+		if err != nil {
+			return nil, err
+		}
+		r.odb = odb
 	}
 	return r.odb, nil
 }
@@ -88,7 +92,7 @@ func (o *Odb) Read(oid *Oid) (*OdbObject, error) {
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Odb.Read: no match for id: %s", oid.String()))
+	return nil, errors.New(fmt.Sprintf("no match for id: %s", oid.String()))
 }
 
 func (o *Odb) ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, error) {
@@ -103,7 +107,7 @@ func (o *Odb) ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, error) {
 		}
 	}
 
-	return nil, nil, errors.New(fmt.Sprintf("Odb.ReadPrefix: no match for id: %s", oid.String()))
+	return nil, nil, errors.New(fmt.Sprintf("no match for id: %s", oid.String()))
 }
 
 func (o *Odb) ReadHeader(oid *Oid) (ObjectType, uint64, error) {
@@ -114,7 +118,7 @@ func (o *Odb) ReadHeader(oid *Oid) (ObjectType, uint64, error) {
 		}
 	}
 
-	return ObjectBad, 0, errors.New(fmt.Sprintf("Odb.ReadHeader: no match for id: %s", oid.String()))
+	return ObjectBad, 0, errors.New(fmt.Sprintf("no match for id: %s", oid.String()))
 }
 
 func (o *Odb) Write(data []byte, objType ObjectType) (*Oid, error) {

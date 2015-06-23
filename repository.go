@@ -14,9 +14,9 @@ const (
 	GIT_REPOSITORY_OPEN_NO_SEARCH uint32 = (1 << 0)
 	GIT_REPOSITORY_OPEN_CROSS_FS  uint32 = (1 << 1)
 	GIT_REPOSITORY_OPEN_BARE      uint32 = (1 << 2)
-	GIT_OBJECTS_DIR               string = "objects/"
-	GIT_HEAD_FILE                 string = "HEAD"
-	GIT_REFS_DIR                  string = "refs/"
+	GitObjectsDir                 string = "objects/"
+	GitHeadFile                   string = "HEAD"
+	GitRefsDir                    string = "refs/"
 )
 
 // Repository type and its methods
@@ -190,7 +190,7 @@ func isContainsDir(dir, subDirName string) bool {
 }
 
 func isValidRepositoryPath(repositoryPath string) bool {
-	return isContainsDir(repositoryPath, GIT_OBJECTS_DIR) &&
-		isContainsFile(repositoryPath, GIT_HEAD_FILE) &&
-		isContainsDir(repositoryPath, GIT_REFS_DIR)
+	return isContainsDir(repositoryPath, GitObjectsDir) &&
+		isContainsFile(repositoryPath, GitHeadFile) &&
+		isContainsDir(repositoryPath, GitRefsDir)
 }

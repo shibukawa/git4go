@@ -3,6 +3,7 @@ package git4go
 import (
 	"./testutil"
 	"testing"
+	//"fmt"
 )
 
 func Test_PackedOdb_Exists(t *testing.T) {
@@ -91,7 +92,7 @@ func Test_PackedOdb_ReadPrefixAndReadHeader(t *testing.T) {
 			if uint64(len(obj.Data)) != size {
 				t.Error("size is wrong", i, len(obj.Data), size, originalOid.String())
 			}
-			//fmt.Println(string(obj.Data))
+			//fmt.Println(originalOid, obj.Type.String(), len(obj.Data))
 		}
 	}
 }

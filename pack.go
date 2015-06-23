@@ -33,7 +33,7 @@ type PackFile struct {
 }
 
 func (p *PackFile) findEntry(shortOid *Oid, length int) (*PackEntry, bool, error) {
-	if length == GIT_OID_HEXSZ {
+	if length == GitOidHexSize {
 		for _, badObject := range p.badObjects {
 			if shortOid.Equal(badObject) {
 				return nil, false, errors.New("bad object found in packfile")
@@ -111,7 +111,7 @@ func (p *PackFile) findOffset(shortOid *Oid, length int) (offsetOut uint64, foun
 		err = errors.New("failed to find offset for pack entry: " + shortOid.String())
 		return
 	}
-	if length != GIT_OID_HEXSZ && pos+1 < p.numObjects {
+	if length != GitOidHexSize && pos+1 < p.numObjects {
 		next := new(Oid)
 		copy(next[:], p.indexMap[current+stride:])
 		if shortOid.NCmp(next, uint(length)) == 0 {
@@ -430,7 +430,7 @@ func (p *PackFile) getDeltaBase(curPos uint64, objType ObjectType, deltaObjOffse
 		if p.hasCache {
 			// todo
 		}
-		baseOffset, _, _, err = p.findOffset(NewOidFromBytes(buffer), GIT_OID_HEXSZ)
+		baseOffset, _, _, err = p.findOffset(NewOidFromBytes(buffer), GitOidHexSize)
 		if err != nil {
 			return 0, 0, errors.New("base entry delta is not in the same pack")
 		}

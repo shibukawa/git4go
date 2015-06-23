@@ -25,7 +25,7 @@ func (r *Repository) LookupReference(name string) (*Reference, error) {
 }
 
 func (r *Repository) Head() (*Reference, error) {
-	head, err := r.LookupReference(GIT_HEAD_FILE)
+	head, err := r.LookupReference(GitHeadFile)
 	if head.Type() == ReferenceOid {
 		return head, err
 	}
@@ -43,7 +43,7 @@ var dwimReferenceFormatter []string = []string{
 
 func (r *Repository) DwimReference(name string) (*Reference, error) {
 	if name == "" {
-		name = GIT_HEAD_FILE
+		name = GitHeadFile
 	}
 	for _, formatter := range dwimReferenceFormatter {
 		refName := fmt.Sprintf(formatter, name)

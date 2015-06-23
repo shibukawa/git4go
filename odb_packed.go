@@ -129,7 +129,7 @@ func (o *OdbBackendPacked) findEntry(oid *Oid) (*PackEntry, error) {
 
 func (o *OdbBackendPacked) findEntryInternal(oid *Oid) (*PackEntry, bool, error) {
 	if o.lastFound != nil {
-		entry, notFound, err := o.lastFound.findEntry(oid, GIT_OID_HEXSZ)
+		entry, notFound, err := o.lastFound.findEntry(oid, GitOidHexSize)
 		if !notFound && err != nil {
 			return nil, false, err
 		}
@@ -141,7 +141,7 @@ func (o *OdbBackendPacked) findEntryInternal(oid *Oid) (*PackEntry, bool, error)
 		if pack == o.lastFound {
 			continue
 		}
-		entry, notFound, err := pack.findEntry(oid, GIT_OID_HEXSZ)
+		entry, notFound, err := pack.findEntry(oid, GitOidHexSize)
 		if !notFound && err != nil {
 			return nil, false, err
 		}
