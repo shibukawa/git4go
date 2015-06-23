@@ -31,7 +31,7 @@ func Test_readGitFile(t *testing.T) {
 	}
 }
 
-func Test_Discover(t *testing.T) {
+func Test_Discover_standardRepository(t *testing.T) {
 	testutil.PrepareWorkspace("test_resources/empty_standard_repo/")
 	defer testutil.CleanupWorkspace()
 
@@ -44,7 +44,20 @@ func Test_Discover(t *testing.T) {
 	}
 }
 
-func Test_OpenRepository_success_1(t *testing.T) {
+func Test_Discover_bareRepository(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo.git")
+	defer testutil.CleanupWorkspace()
+
+	repoPath, err := Discover("test_resources/testrepo.git", false, []string{})
+	if err != nil {
+		t.Error(err)
+	}
+	if !strings.HasSuffix(repoPath, "test_resources/testrepo.git/") {
+		t.Error("result was wrong:", repoPath)
+	}
+}
+
+func Test_OpenRepository_success_withStandardRepo_1(t *testing.T) {
 	testutil.PrepareWorkspace("test_resources/empty_standard_repo/")
 	defer testutil.CleanupWorkspace()
 
@@ -66,7 +79,7 @@ func Test_OpenRepository_success_1(t *testing.T) {
 	}
 }
 
-func Test_OpenRepository_success_2(t *testing.T) {
+func Test_OpenRepository_success_withStandardRepo_2(t *testing.T) {
 	testutil.PrepareWorkspace("test_resources/empty_standard_repo/")
 	defer testutil.CleanupWorkspace()
 
@@ -131,7 +144,7 @@ func Test_OpenRepositoryExtended_success_2(t *testing.T) {
 	}
 
 	if err != nil {
-		t.Error("it should be null when loading repository in success")
+		t.Error("it should be null when loading repository in success", err)
 	}
 }
 
@@ -142,17 +155,17 @@ func Test_OpenRepositoryExtended_success_3(t *testing.T) {
 	os.MkdirAll("test_resources/empty_standard_repo/subdir", 0777)
 
 	repo, err := OpenRepositoryExtended("test_resources/empty_standard_repo/subdir")
-	if repo != nil {
-		t.Error("it should not load repository")
+	if repo == nil {
+		t.Error("it should load repository")
 	}
 
-	if err == nil {
-		t.Error("it should not be null when loading repository in failure")
+	if err != nil {
+		t.Error("it should be null when loading repository in success", err)
 	}
 }
 
 func Test_OpenRepositoryExtended_failure(t *testing.T) {
-	repo, err := OpenRepositoryExtended("test_resources/empty_standard_repo/")
+	repo, err := OpenRepositoryExtended(os.TempDir())
 	if repo != nil {
 		t.Error("it should not load repository")
 	}

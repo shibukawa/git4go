@@ -107,30 +107,28 @@ func findRepo(startPath string, flags uint32, ceilingDirs []string) (repoPath, p
 	tryWithDotGit := (flags & GIT_REPOSITORY_OPEN_BARE) != 0
 	if !tryWithDotGit && filepath.Base(path) != ".git" {
 		path = filepath.Join(path, ".git")
-
 	}
-	for err == nil && repoPath == "" {
-		var stat os.FileInfo
-		stat, err = os.Stat(path)
-		if err == nil {
+	for repoPath == "" {
+		stat, tempErr := os.Stat(path)
+		if tempErr == nil {
 			if stat.IsDir() {
 				if isValidRepositoryPath(path) {
 					repoPath = path + string(filepath.Separator)
 				}
 			}
 			if stat.Mode().IsRegular() {
-				repoLink, e := readGitFile(path)
-				if e != nil {
-					err = e
-					return
-				}
-				if isValidRepositoryPath(repoLink) {
+				repoLink, tempErr2 := readGitFile(path)
+				if tempErr2 == nil && isValidRepositoryPath(repoLink) {
 					repoPath = repoLink
 					linkPath = path
 				}
 			}
 		}
-		path := filepath.Dir(path)
+		parentDir := filepath.Dir(path)
+		if !tryWithDotGit && parentDir == path {
+			break
+		}
+		path = parentDir
 		if tryWithDotGit {
 			if (flags&GIT_REPOSITORY_OPEN_NO_SEARCH) != 0 || len(path) <= ceilingDirOffset {
 				break
@@ -143,7 +141,7 @@ func findRepo(startPath string, flags uint32, ceilingDirs []string) (repoPath, p
 		if len(repoPath) == 0 {
 			parentPath = ""
 		} else {
-			parentPath = filepath.Dir(path) + string(filepath.Separator)
+			parentPath = filepath.Dir(repoPath[:len(repoPath)-1]) + string(filepath.Separator)
 		}
 	}
 	if repoPath == "" && err == nil {
