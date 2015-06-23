@@ -36,8 +36,13 @@ func (o *OdbBackendPacked) Read(oid *Oid) (*OdbObject, error) {
 	return obj, err
 }
 
-func (o *OdbBackendPacked) ReadPrefix(oid *Oid, length int) (*Oid, *OdbObject, error) {
-	return nil, nil, errors.New("not implemented")
+func (o *OdbBackendPacked) ReadPrefix(shortOid *Oid, length int) (*Oid, *OdbObject, error) {
+	entry, err := o.findEntryByPrefix(shortOid, length)
+	if err != nil {
+		return nil, nil, err
+	}
+	obj, _, err := entry.PackFile.unpack(entry.Offset)
+	return entry.Sha1, obj, err
 }
 
 func (o *OdbBackendPacked) ReadHeader(oid *Oid) (ObjectType, uint64, error) {
