@@ -10,6 +10,14 @@ func (r *Repository) LookupPrefixBlob(oid *Oid, length int) (*Blob, error) {
 	return obj.(*Blob), err
 }
 
+func (repo *Repository) CreateBlobFromBuffer(data []byte) (*Oid, error) {
+	odb, err := repo.Odb()
+	if err != nil {
+		return nil, err
+	}
+	return odb.Write(data, ObjectBlob)
+}
+
 type Blob struct {
 	GitObject
 	contents []byte

@@ -40,3 +40,19 @@ func Test_LookupBlob(t *testing.T) {
 		}
 	}
 }
+
+func Test_CreateBlobFromBuffer(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/empty_standard_repo/")
+	defer testutil.CleanupWorkspace()
+
+	repo, _ := OpenRepository("test_resources/empty_standard_repo/")
+	id, err := repo.CreateBlobFromBuffer([]byte{})
+
+	if err != nil {
+		t.Error("error should be nil")
+	} else {
+		if id.String() != "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391" {
+			t.Fatal("Empty buffer did not deliver empty blob id")
+		}
+	}
+}

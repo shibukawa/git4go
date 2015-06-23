@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	GIT_LOOSE_PRIORITY       = 1
-	GIT_PACKED_PRIORITY      = 2
-	GIT_ALTERNATES_MAX_DEPTH = 5
-	GIT_ALTERNATES_FILE      = "info/alternates"
+	GitLoosePriority = 1
+	GitPackedPriority = 2
+	GitAlternatesMaxDepth = 5
+	GitAlternatesFile = "info/alternates"
 )
 
 func (r *Repository) Odb() (odb *Odb, err error) {
@@ -50,10 +50,10 @@ func (o *Odb) AddDefaultBackends(objectsDir string, asAlternates bool, alternate
 		}
 	}
 	loose := NewOdbBackendLoose(objectsDir, -1, false, 0, 0)
-	o.addBackendInternal(loose, GIT_LOOSE_PRIORITY, asAlternates, info)
+	o.addBackendInternal(loose, GitLoosePriority, asAlternates, info)
 	packed := NewOdbBackendPacked(objectsDir)
 	if packed != nil {
-		o.addBackendInternal(packed, GIT_PACKED_PRIORITY, asAlternates, info)
+		o.addBackendInternal(packed, GitPackedPriority, asAlternates, info)
 	}
 	o.loadAlternates(objectsDir, alternateDepth)
 	return nil
@@ -145,10 +145,10 @@ func (o *Odb) addBackendInternal(backend OdbBackend, priority int, asAlternates 
 }
 
 func (o *Odb) loadAlternates(objectsDir string, alternateDepth int) error {
-	if alternateDepth > GIT_ALTERNATES_MAX_DEPTH {
+	if alternateDepth > GitAlternatesMaxDepth {
 		return nil
 	}
-	alternatePath := filepath.Join(objectsDir, GIT_ALTERNATES_FILE)
+	alternatePath := filepath.Join(objectsDir, GitAlternatesFile)
 	_, err := os.Stat(alternatePath)
 	if os.IsNotExist(err) {
 		return nil
