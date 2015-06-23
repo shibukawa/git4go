@@ -73,7 +73,7 @@ func Test_OpenRepository_success_withStandardRepo_1(t *testing.T) {
 		if !strings.HasSuffix(repo.Path(), "test_resources/empty_standard_repo/.git/") {
 			t.Errorf("it should have correct repository path: %s", repo.Path())
 		}
-		if !strings.HasSuffix(repo.WorkDir(), "test_resources/empty_standard_repo/") {
+		if !strings.HasSuffix(repo.Workdir(), "test_resources/empty_standard_repo/") {
 			t.Errorf("it should have correct workdir path: %s", repo.Path())
 		}
 	}
@@ -90,6 +90,29 @@ func Test_OpenRepository_success_withStandardRepo_2(t *testing.T) {
 
 	if err != nil {
 		t.Error("it should be null when loading repository in success")
+	}
+}
+
+func Test_OpenRepository_success_withBaredRepo(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo.git")
+	defer testutil.CleanupWorkspace()
+
+	repo, err := OpenRepository("test_resources/testrepo.git")
+	if err != nil {
+		t.Error("it should be null when loading repository in success")
+	}
+	if repo == nil {
+		t.Error("it should load repository")
+	} else {
+		if !strings.HasSuffix(repo.Path(), "test_resources/testrepo.git/") {
+			t.Errorf("it should have correct repository path: %s", repo.Path())
+		}
+		if !repo.IsBare() {
+			t.Error("bare repo should return true when calling IsBare()")
+		}
+		if repo.Workdir() != "" {
+			t.Errorf("it should empty if the repository is bare one: %s", repo.Workdir())
+		}
 	}
 }
 

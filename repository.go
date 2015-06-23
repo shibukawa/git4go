@@ -45,11 +45,15 @@ func (r *Repository) Path() string {
 	return r.pathRepository
 }
 
-func (r *Repository) WorkDir() string {
+func (r *Repository) Workdir() string {
 	if r.isBare {
 		return ""
 	}
 	return r.workDir
+}
+
+func (r *Repository) IsBare() bool {
+	return r.isBare
 }
 
 // internal functions
@@ -62,12 +66,19 @@ func openRepository(path string, flags uint32) (*Repository, error) {
 	repo := &Repository{
 		pathRepository: path,
 		pathGitLink:    link_path,
-		isBare:         (flags & GIT_REPOSITORY_OPEN_BARE) != 0,
 		//cache:          NewCache(),
 	}
 	config := repo.Config()
+	loadConfigData(repo, config)
 	loadWorkDir(repo, config, parent)
 	return repo, nil
+}
+
+func loadConfigData(repo *Repository, config *Config) {
+	isBare, err := config.LookupBool("core.bare")
+	if err == nil {
+		repo.isBare = isBare
+	}
 }
 
 func loadWorkDir(repo *Repository, config *Config, parent string) {

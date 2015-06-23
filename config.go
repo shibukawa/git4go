@@ -38,7 +38,7 @@ func (repo *Repository) Config() *Config {
 		config, _ := NewConfig()
 		path := filepath.Join(repo.pathRepository, GIT_CONFIG_FILENAME_INREPO)
 		_, err := os.Stat(path)
-		if os.IsExist(err) {
+		if !os.IsNotExist(err) {
 			err = config.AddFile(path, ConfigLevelLocal, false)
 			if err != nil {
 				return nil
