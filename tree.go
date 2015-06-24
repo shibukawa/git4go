@@ -17,12 +17,18 @@ const (
 
 func (r *Repository) LookupTree(oid *Oid) (*Tree, error) {
 	obj, err := objectLookupPrefix(r, oid, GitOidHexSize, ObjectTree)
-	return obj.(*Tree), err
+	if obj != nil {
+		return obj.(*Tree), err
+	}
+	return nil, err
 }
 
 func (r *Repository) LookupPrefixTree(oid *Oid, length int) (*Tree, error) {
 	obj, err := objectLookupPrefix(r, oid, length, ObjectTree)
-	return obj.(*Tree), err
+	if obj != nil {
+		return obj.(*Tree), err
+	}
+	return nil, err
 }
 
 type Tree struct {
@@ -60,7 +66,6 @@ func (t *Tree) Type() ObjectType {
 
 func newTree(repo *Repository, oid *Oid, contents []byte) (*Tree, error) {
 	var entries []*TreeEntry
-
 	rawOffset := 0
 	var name string
 	for rawOffset < len(contents) {

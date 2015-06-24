@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	GitLoosePriority = 1
-	GitPackedPriority = 2
+	GitLoosePriority      = 1
+	GitPackedPriority     = 2
 	GitAlternatesMaxDepth = 5
-	GitAlternatesFile = "info/alternates"
+	GitAlternatesFile     = "info/alternates"
 )
 
 func (r *Repository) Odb() (odb *Odb, err error) {

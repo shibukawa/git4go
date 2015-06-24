@@ -2,8 +2,8 @@ package git4go
 
 import (
 	"./testutil"
-	"testing"
 	//"fmt"
+	"testing"
 )
 
 func Test_PackedOdb_Exists(t *testing.T) {

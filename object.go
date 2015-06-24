@@ -67,16 +67,16 @@ type Object interface {
 	Owner() *Repository
 }
 
-type GitObject struct {
+type gitObject struct {
 	repo *Repository
 	oid  *Oid
 }
 
-func (o *GitObject) Owner() *Repository {
+func (o *gitObject) Owner() *Repository {
 	return o.repo
 }
 
-func (o *GitObject) Id() *Oid {
+func (o *gitObject) Id() *Oid {
 	return o.oid
 }
 
@@ -118,6 +118,10 @@ func objectLookupPrefix(repo *Repository, oid *Oid, length int, selectType Objec
 	switch rawObj.Type {
 	case ObjectBlob:
 		return newBlob(repo, resultOid, rawObj.Data), nil
+	case ObjectTree:
+		return newTree(repo, resultOid, rawObj.Data)
+	case ObjectCommit:
+		return newCommit(repo, resultOid, rawObj.Data)
 	}
 	return nil, errors.New("Invalid type:" + selectType.String())
 }

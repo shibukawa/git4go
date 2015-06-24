@@ -199,7 +199,7 @@ func (p *PackFile) open() error {
 	}
 	var sha1 Oid
 	var idxSha1 Oid
-	_, err = p.mwf.file.Seek(int64(p.mwf.size-GIT_OID_RAWSZ), os.SEEK_SET)
+	_, err = p.mwf.file.Seek(int64(p.mwf.size-GitOidRawSize), os.SEEK_SET)
 	if err != nil {
 		return errors.New("failed to open packfile (4)")
 	}

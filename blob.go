@@ -19,7 +19,7 @@ func (repo *Repository) CreateBlobFromBuffer(data []byte) (*Oid, error) {
 }
 
 type Blob struct {
-	GitObject
+	gitObject
 	contents []byte
 }
 
@@ -38,7 +38,7 @@ func (b *Blob) Contents() []byte {
 func newBlob(repo *Repository, oid *Oid, contents []byte) *Blob {
 	return &Blob{
 		contents: contents,
-		GitObject: GitObject{
+		gitObject: gitObject{
 			repo: repo,
 			oid:  oid,
 		},
