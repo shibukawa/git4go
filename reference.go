@@ -11,11 +11,11 @@ import (
 type ReferenceType int
 
 const (
-	ReferenceOid          ReferenceType = 1
-	ReferenceSymbolic     ReferenceType = 2
-	DEFAULT_NESTING_LEVEL               = 5
-	MAX_NESTING_LEVEL                   = 10
-	GIT_REFNAME_MAX                     = 1024
+	ReferenceOid        ReferenceType = 1
+	ReferenceSymbolic   ReferenceType = 2
+	DefaultNestingLevel               = 5
+	MaxNestingLevel                   = 10
+	GitRefNameMax                     = 1024
 )
 
 // Repository methods related to Reference
@@ -103,13 +103,21 @@ func (r *Reference) IsTag() bool {
 	return false
 }
 
+func (r *Reference) Resolve() (*Reference, error) {
+	if r.refType == ReferenceOid {
+		return r, nil
+	} else {
+		return referenceLookupResolved(r.repo, r.targetSymbolic, -1)
+	}
+}
+
 // internal functions
 
 func referenceLookupResolved(repo *Repository, name string, maxNesting int) (*Reference, error) {
-	if maxNesting > MAX_NESTING_LEVEL {
-		maxNesting = MAX_NESTING_LEVEL
+	if maxNesting > MaxNestingLevel {
+		maxNesting = MaxNestingLevel
 	} else if maxNesting < 0 {
-		maxNesting = DEFAULT_NESTING_LEVEL
+		maxNesting = DefaultNestingLevel
 	}
 
 	scanType := ReferenceSymbolic

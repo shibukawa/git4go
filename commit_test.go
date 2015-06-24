@@ -39,5 +39,13 @@ func Test_LookupCommit(t *testing.T) {
 	if commit == nil {
 		t.Error("obj should not be nil")
 	} else {
+		tree, err := commit.Tree()
+		if err != nil {
+			t.Error("err should be nil:", err)
+		} else {
+			if !tree.Id().Equal(commit.treeId) {
+				t.Error("tree should have same Oid")
+			}
+		}
 	}
 }

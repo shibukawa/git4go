@@ -66,6 +66,7 @@ func (r *RefDb) Lookup(name string) (*Reference, error) {
 		ref := &Reference{
 			refType:        ReferenceSymbolic,
 			targetSymbolic: strings.TrimSpace(refString[len(GIT_SYMREF):]),
+			repo:           r.repo,
 		}
 		return ref, nil
 	} else {
@@ -76,6 +77,7 @@ func (r *RefDb) Lookup(name string) (*Reference, error) {
 		ref := &Reference{
 			refType:   ReferenceOid,
 			targetOid: oid,
+			repo:      r.repo,
 		}
 		return ref, nil
 	}

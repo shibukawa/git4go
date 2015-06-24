@@ -43,7 +43,7 @@ func (c *Commit) Summary() string {
 }
 
 func (c Commit) Tree() (*Tree, error) {
-	return nil, nil
+	return c.repo.LookupTree(c.treeId)
 }
 
 func (c Commit) TreeId() *Oid {
