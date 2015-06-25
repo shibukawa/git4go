@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	GIT_PACKEDREFS_FILE = "packed-refs"
-	GIT_SYMREF          = "ref: "
+	GitPackedRefsFile  = "packed-refs"
+	GitSymbolReference = "ref: "
 )
 
 type RefDb struct {
@@ -51,7 +51,7 @@ func (r *Repository) NewRefDb() *RefDb {
 		r.refDb.path = r.pathRepository
 	}
 
-	//packedRefPath := filepath.Join(r.refDb.path, GIT_PACKEDREFS_FILE)
+	//packedRefPath := filepath.Join(r.refDb.path, GitPackedRefsFile)
 
 	return r.refDb
 }
@@ -62,10 +62,10 @@ func (r *RefDb) Lookup(name string) (*Reference, error) {
 		return nil, err
 	}
 	refString := string(refFile)
-	if strings.HasPrefix(refString, GIT_SYMREF) {
+	if strings.HasPrefix(refString, GitSymbolReference) {
 		ref := &Reference{
 			refType:        ReferenceSymbolic,
-			targetSymbolic: strings.TrimSpace(refString[len(GIT_SYMREF):]),
+			targetSymbolic: strings.TrimSpace(refString[len(GitSymbolReference):]),
 			repo:           r.repo,
 		}
 		return ref, nil
