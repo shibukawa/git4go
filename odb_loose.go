@@ -26,10 +26,10 @@ func NewOdbBackendLoose(objectsDir string, compressionLevel int, doFileSync bool
 		compressionLevel = zlib.BestSpeed
 	}
 	if dirMode == 0 {
-		dirMode = GIT_OBJECT_DIR_MODE
+		dirMode = GitObjectDirMode
 	}
 	if fileMode == 0 {
-		fileMode = GIT_OBJECT_FILE_MODE
+		fileMode = GitObjectFileMode
 	}
 	return &OdbBackendLoose{
 		objectsDir: objectsDir,
@@ -179,8 +179,8 @@ func (o *OdbBackendLoose) Write(data []byte, objType ObjectType) (*Oid, error) {
 	}
 	dirName, fileName := oid.PathFormat()
 	dirPath := filepath.Join(o.objectsDir, dirName)
-	os.MkdirAll(dirPath, os.FileMode(GIT_OBJECT_DIR_MODE))
-	file, err := os.OpenFile(filepath.Join(dirPath, fileName), os.O_WRONLY, os.FileMode(GIT_OBJECT_FILE_MODE))
+	os.MkdirAll(dirPath, os.FileMode(GitObjectDirMode))
+	file, err := os.OpenFile(filepath.Join(dirPath, fileName), os.O_WRONLY, os.FileMode(GitObjectFileMode))
 	defer file.Close()
 	writer := zlib.NewWriter(file)
 	fmt.Fprintf(writer, "%s %d\x00", objType.String(), len(data))
@@ -225,5 +225,44 @@ func (o *OdbBackendLoose) ExistsPrefix(oid *Oid, length int) (*Oid, error) {
 }
 
 func (o *OdbBackendLoose) Refresh() error {
+	return nil
+}
+
+func (o *OdbBackendLoose) ForEach(callback OdbForEachCallback) error {
+	objectDir, err := os.Open(o.objectsDir)
+	if err != nil {
+		return err
+	}
+	dirNames, err := objectDir.Readdirnames(0)
+	if err != nil {
+		return err
+	}
+	for _, dirName := range dirNames {
+		if len(dirName) != 2 {
+			continue
+		}
+		dirPath := filepath.Join(o.objectsDir, dirName)
+		childDir, err := os.Open(dirPath)
+		if err != nil {
+			return err
+		}
+		childItems, err := childDir.Readdirnames(0)
+		if err != nil {
+			return err
+		}
+		for _, childItem := range childItems {
+			if len(childItem) != 38 {
+				continue
+			}
+			oid, err := NewOid(dirName + childItem)
+			if err != nil {
+				return err
+			}
+			err = callback(oid)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }

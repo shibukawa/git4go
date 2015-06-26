@@ -9,8 +9,8 @@ const (
 	GitOidRawSize                    = 20
 	GitOidHexSize                    = 40
 	GitOidMinimumPrefixLength        = 4
-	GIT_OBJECT_DIR_MODE       uint32 = 0777
-	GIT_OBJECT_FILE_MODE      uint32 = 0444
+	GitObjectDirMode          uint32 = 0777
+	GitObjectFileMode         uint32 = 0444
 )
 
 func Discover(start string, acrossFs bool, ceilingDirs []string) (string, error) {

@@ -40,6 +40,7 @@ type OdbBackend interface {
 	Exists(oid *Oid) bool
 	ExistsPrefix(oid *Oid, length int) (*Oid, error)
 	Refresh() error
+	ForEach(callback OdbForEachCallback) error
 }
 
 type OdbBackends []OdbBackend

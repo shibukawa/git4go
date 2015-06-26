@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 	"unsafe"
@@ -244,9 +245,9 @@ func (p *PackFile) checkIndex(path string) error {
 	}
 	var nr uint32
 	map32 := *(*[]uint32)(unsafe.Pointer(&p.indexMap))
-	index := 0
+	var index int
 	if index_version > 1 {
-		index += 2
+		index = 2
 	}
 	for i := 0; i < 256; i++ {
 		n := ntohl(map32[index+i])
@@ -509,6 +510,76 @@ func (p *PackFile) unpack(objOffset uint64) (obj *OdbObject, resultObjOffset uin
 		obj.Data = baseData
 	}
 	return
+}
+
+type uint32PointerArray struct {
+	baseArray []uint32
+	offsets   []int
+}
+
+func (a uint32PointerArray) Len() int {
+	return len(a.offsets)
+}
+func (a uint32PointerArray) Swap(i, j int) {
+	a.offsets[i], a.offsets[j] = a.offsets[j], a.offsets[i]
+}
+func (a uint32PointerArray) Less(i, j int) bool {
+	return a.baseArray[a.offsets[i]] < a.baseArray[a.offsets[j]]
+}
+
+func (p *PackFile) forEach(callback OdbForEachCallback) error {
+	intMap := *(*[]uint32)(unsafe.Pointer(&p.indexMap))
+
+	var index int
+
+	if len(p.indexMap) == 0 {
+		err := p.openIndex()
+		if err != nil {
+			return err
+		}
+	}
+	if p.indexVersion > 1 {
+		index += 2
+	}
+
+	index += 256
+
+	if len(p.oids) == 0 {
+		p.oids = make([]*Oid, p.numObjects)
+		offsets := uint32PointerArray{
+			baseArray: intMap,
+			offsets:   make([]int, p.numObjects),
+		}
+		if p.indexVersion > 1 {
+			baseOffset := index + 6*p.numObjects
+			for i := 0; i < p.numObjects; i++ {
+				offsets.offsets[i] = baseOffset + i
+			}
+			sort.Sort(offsets)
+			for i, offset := range offsets.offsets {
+				offset = offset - baseOffset
+				oid := NewOidFromBytes(p.indexMap[index*4+offset*20 : index*4+offset*20+20])
+				p.oids[i] = oid
+			}
+		} else {
+			for i := 0; i < p.numObjects; i++ {
+				offsets.offsets = append(offsets.offsets, index+6*i)
+			}
+			sort.Sort(offsets)
+			for _, offset := range offsets.offsets {
+				oid := NewOidFromBytes(p.indexMap[offset*4+4 : offset*4+24])
+				p.oids = append(p.oids, oid)
+			}
+		}
+	}
+
+	for _, oid := range p.oids {
+		err := callback(oid)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func NewPackFile(path string) (*PackFile, error) {

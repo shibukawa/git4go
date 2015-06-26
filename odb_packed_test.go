@@ -2,7 +2,6 @@ package git4go
 
 import (
 	"./testutil"
-	//"fmt"
 	"testing"
 )
 
@@ -92,7 +91,29 @@ func Test_PackedOdb_ReadPrefixAndReadHeader(t *testing.T) {
 			if uint64(len(obj.Data)) != size {
 				t.Error("size is wrong", i, len(obj.Data), size, originalOid.String())
 			}
-			//fmt.Println(originalOid, obj.Type.String(), len(obj.Data))
+			//fmt.Println(originalOid, obj.Type.String(), len(obj.Data)
 		}
+	}
+}
+
+func Test_PackedOdb_ForEach(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo.git")
+	defer testutil.CleanupWorkspace()
+	odb, _ := OdbOpen("test_resources/testrepo.git/objects")
+	var idList []*Oid
+	checkId, _ := NewOid("b0a8568a7614806378a54db5706ee3b06ae58693")
+	found := false
+	odb.ForEach(func(oid *Oid) error {
+		if checkId.Equal(oid) {
+			found = true
+		}
+		idList = append(idList, oid)
+		return nil
+	})
+	if len(idList) != 1640+47 {
+		t.Error("ForEach should call callback:", len(idList))
+	}
+	if !found {
+		t.Error("target id is not found")
 	}
 }

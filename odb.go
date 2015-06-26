@@ -135,6 +135,18 @@ func (o *Odb) Write(data []byte, objType ObjectType) (*Oid, error) {
 	return nil, errors.New("Odb.Write: no backend write data")
 }
 
+type OdbForEachCallback func(id *Oid) error
+
+func (o *Odb) ForEach(callback OdbForEachCallback) error {
+	for _, backend := range o.backends {
+		err := backend.ForEach(callback)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // internal functions and methods
 
 func (o *Odb) addBackendInternal(backend OdbBackend, priority int, asAlternates bool, dirInfo os.FileInfo) {

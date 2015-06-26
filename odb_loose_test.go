@@ -200,3 +200,25 @@ func Test_LooseWrite(t *testing.T) {
 		}
 	}
 }
+
+func Test_LooseOdb_ForEach(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/blametest.git")
+	defer testutil.CleanupWorkspace()
+	odb, _ := OdbOpen("test_resources/blametest.git/objects")
+	var idList []*Oid
+	checkId, _ := NewOid("0cbab4d45fd61e55a1c9697f9f9cb07a12e15448")
+	found := false
+	odb.ForEach(func(oid *Oid) error {
+		if checkId.Equal(oid) {
+			found = true
+		}
+		idList = append(idList, oid)
+		return nil
+	})
+	if len(idList) != 19 {
+		t.Error("ForEach should call callback:", len(idList))
+	}
+	if !found {
+		t.Error("target id is not found")
+	}
+}

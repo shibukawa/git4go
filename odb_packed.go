@@ -110,6 +110,20 @@ func (o *OdbBackendPacked) Refresh() error {
 	return nil
 }
 
+func (o *OdbBackendPacked) ForEach(callback OdbForEachCallback) error {
+	err := o.Refresh()
+	if err != nil {
+		return err
+	}
+	for _, pack := range o.packs {
+		err = pack.forEach(callback)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // internal functions
 
 func (o *OdbBackendPacked) findEntry(oid *Oid) (*PackEntry, error) {

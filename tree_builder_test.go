@@ -16,7 +16,6 @@ $ git ls-tree b10489944b9ead17427551759d180d10203e06ba                          
 func Test_TreeBuilder(t *testing.T) {
 	testutil.PrepareWorkspace("test_resources/empty_standard_repo/")
 	defer testutil.CleanupWorkspace()
-
 	repo, _ := OpenRepository("test_resources/empty_standard_repo/.git")
 
 	builder, _ := repo.TreeBuilder()
