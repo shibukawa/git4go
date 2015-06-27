@@ -21,7 +21,6 @@ type PackFile struct {
 	indexMap mmap.MMap
 
 	numObjects   int
-	oids         []*Oid
 	badObjects   []*Oid
 	mtime        time.Time
 	packLocal    bool
@@ -528,6 +527,12 @@ func (a uint32PointerArray) Less(i, j int) bool {
 }
 
 func (p *PackFile) forEach(callback OdbForEachCallback) error {
+	if len(p.indexMap) == 0 {
+		err := p.openIndex()
+		if err != nil {
+			return err
+		}
+	}
 	intMap := *(*[]uint32)(unsafe.Pointer(&p.indexMap))
 
 	var index int
@@ -543,37 +548,34 @@ func (p *PackFile) forEach(callback OdbForEachCallback) error {
 	}
 
 	index += 256
-
-	if len(p.oids) == 0 {
-		p.oids = make([]*Oid, p.numObjects)
-		offsets := uint32PointerArray{
-			baseArray: intMap,
-			offsets:   make([]int, p.numObjects),
+	oids := make([]*Oid, p.numObjects)
+	offsets := uint32PointerArray{
+		baseArray: intMap,
+		offsets:   make([]int, p.numObjects),
+	}
+	if p.indexVersion > 1 {
+		baseOffset := index + 6*p.numObjects
+		for i := 0; i < p.numObjects; i++ {
+			offsets.offsets[i] = baseOffset + i
 		}
-		if p.indexVersion > 1 {
-			baseOffset := index + 6*p.numObjects
-			for i := 0; i < p.numObjects; i++ {
-				offsets.offsets[i] = baseOffset + i
-			}
-			sort.Sort(offsets)
-			for i, offset := range offsets.offsets {
-				offset = offset - baseOffset
-				oid := NewOidFromBytes(p.indexMap[index*4+offset*20 : index*4+offset*20+20])
-				p.oids[i] = oid
-			}
-		} else {
-			for i := 0; i < p.numObjects; i++ {
-				offsets.offsets = append(offsets.offsets, index+6*i)
-			}
-			sort.Sort(offsets)
-			for _, offset := range offsets.offsets {
-				oid := NewOidFromBytes(p.indexMap[offset*4+4 : offset*4+24])
-				p.oids = append(p.oids, oid)
-			}
+		sort.Sort(offsets)
+		for i, offset := range offsets.offsets {
+			offset = offset - baseOffset
+			oid := NewOidFromBytes(p.indexMap[index*4+offset*20 : index*4+offset*20+20])
+			oids[i] = oid
+		}
+	} else {
+		for i := 0; i < p.numObjects; i++ {
+			offsets.offsets = append(offsets.offsets, index+6*i)
+		}
+		sort.Sort(offsets)
+		for _, offset := range offsets.offsets {
+			oid := NewOidFromBytes(p.indexMap[offset*4+4 : offset*4+24])
+			oids = append(oids, oid)
 		}
 	}
 
-	for _, oid := range p.oids {
+	for _, oid := range oids {
 		err := callback(oid)
 		if err != nil {
 			return err

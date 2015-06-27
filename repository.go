@@ -17,6 +17,7 @@ const (
 	GitObjectsDir                 string = "objects/"
 	GitHeadFile                   string = "HEAD"
 	GitRefsDir                    string = "refs/"
+	GitTagsDir                    string = "refs/tags"
 )
 
 // Repository type and its methods

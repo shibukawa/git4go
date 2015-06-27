@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/text/unicode/norm"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -59,6 +60,55 @@ func (r *Repository) DwimReference(name string) (*Reference, error) {
 	return nil, errors.New(fmt.Sprintf("Could not use '%s' as valid reference name", name))
 }
 
+type ForEachReferenceNameCallback func(string) error
+
+func (r *Repository) ForEachReferenceName(callback ForEachReferenceNameCallback) error {
+	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
+	offset := len(r.pathRepository)
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		return callback(path[offset:])
+	})
+	return err
+}
+
+type ForEachReferenceCallback func(*Reference) error
+
+func (r *Repository) ForEachReference(callback ForEachReferenceCallback) error {
+	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
+	offset := len(rootDir) - 4
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		ref, err := r.LookupReference(path[offset:])
+		if err != nil {
+			return err
+		}
+		return callback(ref)
+	})
+	return err
+}
+
+func (r *Repository) ForEachGlobReferenceName(pattern string, callback ForEachReferenceNameCallback) error {
+	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
+	offset := len(r.pathRepository)
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		path = path[offset:]
+		matched, _ := filepath.Match(pattern, path)
+		if matched {
+			return callback(path)
+		}
+		return nil
+	})
+	return err
+}
+
 // Reference type and its methods
 type Reference struct {
 	refType        ReferenceType
@@ -83,7 +133,7 @@ func (v *Reference) Cmp(ref2 *Reference) int {
 	return 0
 }
 
-func (r *Reference) name() string {
+func (r *Reference) Name() string {
 	return ""
 }
 

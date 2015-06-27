@@ -147,6 +147,15 @@ func (o *Odb) ForEach(callback OdbForEachCallback) error {
 	return nil
 }
 
+func (o *Odb) GetAllObjects() ([]*Oid, error) {
+	var oids []*Oid
+	err := o.ForEach(func(oid *Oid) error {
+		oids = append(oids, oid)
+		return nil
+	})
+	return oids, err
+}
+
 // internal functions and methods
 
 func (o *Odb) addBackendInternal(backend OdbBackend, priority int, asAlternates bool, dirInfo os.FileInfo) {

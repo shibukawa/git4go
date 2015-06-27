@@ -122,6 +122,8 @@ func objectLookupPrefix(repo *Repository, oid *Oid, length int, selectType Objec
 		return newTree(repo, resultOid, rawObj.Data)
 	case ObjectCommit:
 		return newCommit(repo, resultOid, rawObj.Data)
+	case ObjectTag:
+		return newTag(repo, resultOid, rawObj.Data)
 	}
 	return nil, errors.New("Invalid type:" + selectType.String())
 }
