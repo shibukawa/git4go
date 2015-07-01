@@ -65,6 +65,28 @@ func Test_DwimReference(t *testing.T) {
 	}
 }
 
+func Test_DwimReferenceInPackFile(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo2")
+	defer testutil.CleanupWorkspace()
+
+	repo, _ := OpenRepository("test_resources/testrepo2")
+	ref, err := repo.DwimReference("v0.9")
+	if err != nil {
+		t.Error("err should be nil:", err)
+	}
+	if ref == nil {
+		t.Error("ref should not be nil")
+	} else {
+		if ref.Name() != "refs/tags/v0.9" {
+			t.Error("name was wrong:", ref.Name())
+		}
+		expectOid, _ := NewOid("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+		if !ref.Target().Equal(expectOid) {
+
+		}
+	}
+}
+
 func Test_ReferenceResolve(t *testing.T) {
 	testutil.PrepareWorkspace("test_resources/testrepo/")
 	defer testutil.CleanupWorkspace()

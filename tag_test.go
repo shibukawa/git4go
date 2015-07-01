@@ -51,3 +51,17 @@ func Test_ListTag(t *testing.T) {
 		t.Error("result should contain tags:", tags)
 	}
 }
+
+func Test_ListTagInPackFile(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo2")
+	defer testutil.CleanupWorkspace()
+
+	repo, _ := OpenRepository("test_resources/testrepo2")
+	tags, err := repo.ListTag()
+	if err != nil {
+		t.Error("err should be nil:", err)
+	}
+	if len(tags) != 2 {
+		t.Error("result should contain tags:", tags)
+	}
+}

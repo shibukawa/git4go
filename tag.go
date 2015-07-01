@@ -25,13 +25,23 @@ func (r *Repository) LookupPrefixTag(oid *Oid, length int) (*Tag, error) {
 func (r *Repository) ListTag() ([]string, error) {
 	var tags []string
 	err := r.ForEachReferenceName(func(path string) error {
-		if strings.HasPrefix(path, GitTagsDir) {
-			tags = append(tags, path[len(GitTagsDir)+1:])
+		if strings.HasPrefix(path, GitRefsTagsDir) {
+			tags = append(tags, path[len(GitRefsTagsDir)+1:])
 		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+	refDb := r.NewRefDb()
+	refs, err := refDb.GetPackedReferences()
+	if refs != nil {
+		for _, ref := range refs {
+			path := ref.Name()
+			if strings.HasPrefix(path, GitRefsTagsDir) {
+				tags = append(tags, path[len(GitRefsTagsDir)+1:])
+			}
+		}
 	}
 	return tags, nil
 }

@@ -115,6 +115,7 @@ type Reference struct {
 	repo           *Repository
 	targetSymbolic string
 	targetOid      *Oid
+	name           string
 }
 
 func (r *Reference) Target() *Oid {
@@ -134,7 +135,7 @@ func (v *Reference) Cmp(ref2 *Reference) int {
 }
 
 func (r *Reference) Name() string {
-	return ""
+	return r.name
 }
 
 func (r *Reference) Type() ReferenceType {
