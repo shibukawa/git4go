@@ -3,6 +3,7 @@ package git4go
 import (
 	"bytes"
 	"errors"
+	"sort"
 	"strings"
 )
 
@@ -22,8 +23,20 @@ func (r *Repository) LookupPrefixTag(oid *Oid, length int) (*Tag, error) {
 	return nil, err
 }
 
+type strList []string
+
+func (s strList) Len() int {
+	return len(s)
+}
+func (s strList) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s strList) Less(i, j int) bool {
+	return s[i] < s[j]
+}
+
 func (r *Repository) ListTag() ([]string, error) {
-	var tags []string
+	var tags strList
 	err := r.ForEachReferenceName(func(path string) error {
 		if strings.HasPrefix(path, GitRefsTagsDir) {
 			tags = append(tags, path[len(GitRefsTagsDir)+1:])
@@ -43,6 +56,7 @@ func (r *Repository) ListTag() ([]string, error) {
 			}
 		}
 	}
+	sort.Sort(tags)
 	return tags, nil
 }
 
