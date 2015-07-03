@@ -65,6 +65,7 @@ type Object interface {
 	Id() *Oid
 	Type() ObjectType
 	Owner() *Repository
+	Peel(targetType ObjectType) (Object, error)
 }
 
 type gitObject struct {
@@ -78,6 +79,64 @@ func (o *gitObject) Owner() *Repository {
 
 func (o *gitObject) Id() *Oid {
 	return o.oid
+}
+
+func checkTypeCombination(sourceType, targetType ObjectType) bool {
+	if sourceType == targetType {
+		return true
+	}
+	switch sourceType {
+	case ObjectBlob:
+		return false
+	case ObjectTree:
+		return false
+	case ObjectCommit:
+		return (targetType == ObjectTree) || (targetType == ObjectAny)
+	case ObjectTag:
+		return true
+	}
+	return false
+}
+
+func peelError(oid *Oid, targetType ObjectType) error {
+	msg := fmt.Sprintf("The git_object of id '%s' can not be successfully peeled into a %s.", oid, targetType)
+	return errors.New(msg)
+}
+
+func dereferenceObject(object Object) Object {
+	switch object.Type() {
+	case ObjectCommit:
+		tree, _ := object.(*Commit).Tree()
+		return tree
+	case ObjectTag:
+		return object.(*Tag).Target()
+	default:
+		return nil
+	}
+}
+
+func peel(source Object, targetType ObjectType) (Object, error) {
+	if targetType != ObjectTag && targetType != ObjectCommit && targetType != ObjectTree && targetType != ObjectBlob && targetType != ObjectAny {
+		return nil, errors.New("invalid type")
+	}
+	sourceType := source.Type()
+	if !checkTypeCombination(sourceType, targetType) {
+		peelError(source.Id(), targetType)
+	}
+	if source.Type() == targetType {
+		return source, nil
+	}
+	for {
+		peeled := dereferenceObject(source)
+		if peeled == nil {
+			break
+		}
+		if peeled.Type() == targetType || (targetType == ObjectAny && peeled.Type() != sourceType) {
+			return peeled, nil
+		}
+		source = peeled
+	}
+	return nil, peelError(source.Id(), targetType)
 }
 
 func (r *Repository) Lookup(oid *Oid) (Object, error) {

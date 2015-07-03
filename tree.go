@@ -36,6 +36,14 @@ type Tree struct {
 	Entries []*TreeEntry
 }
 
+func (t *Tree) Type() ObjectType {
+	return ObjectTree
+}
+
+func (t *Tree) Peel(targetType ObjectType) (Object, error) {
+	return peel(t, targetType)
+}
+
 func (t *Tree) EntryByName(filename string) *TreeEntry {
 	for _, entry := range t.Entries {
 		if entry.Name == filename {
@@ -58,10 +66,6 @@ func (t *Tree) EntryByIndex(index int) *TreeEntry {
 
 func (t *Tree) EntryCount() uint64 {
 	return uint64(len(t.Entries))
-}
-
-func (t *Tree) Type() ObjectType {
-	return ObjectTree
 }
 
 func newTree(repo *Repository, oid *Oid, contents []byte) (*Tree, error) {

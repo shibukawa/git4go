@@ -27,6 +27,10 @@ func (b *Blob) Type() ObjectType {
 	return ObjectBlob
 }
 
+func (b *Blob) Peel(targetType ObjectType) (Object, error) {
+	return peel(b, targetType)
+}
+
 func (b *Blob) Size() int64 {
 	return int64(len(b.contents))
 }

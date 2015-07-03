@@ -34,6 +34,10 @@ func (t *Commit) Type() ObjectType {
 	return ObjectCommit
 }
 
+func (c *Commit) Peel(targetType ObjectType) (Object, error) {
+	return peel(c, targetType)
+}
+
 func (c *Commit) Message() string {
 	return c.message
 }

@@ -73,6 +73,10 @@ func (t *Tag) Type() ObjectType {
 	return ObjectTag
 }
 
+func (t *Tag) Peel(targetType ObjectType) (Object, error) {
+	return peel(t, targetType)
+}
+
 func (t *Tag) Message() string {
 	return t.message
 }
