@@ -135,8 +135,8 @@ func Test_ForEachReferenceName(t *testing.T) {
 	if err != nil {
 		t.Error("err should be nil", err)
 	}
-	if len(names) != 13 {
-		t.Error("it should have references in repository:", names)
+	if len(names) != 15 {
+		t.Error("it should have references in repository:", len(names), names)
 	}
 }
 
@@ -153,8 +153,8 @@ func Test_ForEachReference(t *testing.T) {
 	if err != nil {
 		t.Error("err should be nil", err)
 	}
-	if len(names) != 13 {
-		t.Error("it should have references in repository:", names)
+	if len(names) != 15 {
+		t.Error("it should have references in repository:", len(names), names)
 	}
 }
 
@@ -171,7 +171,7 @@ func Test_ForEachGlobReference(t *testing.T) {
 	if err != nil {
 		t.Error("err should be nil")
 	}
-	if len(names) != 3 {
-		t.Error("it should have references in repository:", names)
+	if len(names) != 6 {
+		t.Error("it should have references in repository:", len(names), names)
 	}
 }

@@ -5,6 +5,39 @@ import (
 	"strings"
 )
 
+type ErrorCode int
+
+const (
+	// Signals end of iteration with iterator
+	ErrIterOver ErrorCode = -31
+)
+
+type GitError struct {
+	Message string
+	Code    ErrorCode
+}
+
+func (e GitError) Error() string {
+	return e.Message
+}
+
+func IsErrorCode(err error, c ErrorCode) bool {
+	if err == nil {
+		return false
+	}
+	if gitError, ok := err.(*GitError); ok {
+		return gitError.Code == c
+	}
+	return false
+}
+
+func MakeGitError(message string, errorCode ErrorCode) error {
+	return &GitError{
+		Message: message,
+		Code:    errorCode,
+	}
+}
+
 const (
 	GitOidRawSize                    = 20
 	GitOidHexSize                    = 40

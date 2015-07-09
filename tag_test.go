@@ -65,3 +65,28 @@ func Test_ListTagInPackFile(t *testing.T) {
 		t.Error("result should contain tags:", tags)
 	}
 }
+
+func Test_ReadTagTaggerLess(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo.git")
+	defer testutil.CleanupWorkspace()
+	repo, _ := OpenRepository("test_resources/testrepo.git")
+	oid, _ := NewOid("4a23e2e65ad4e31c4c9db7dc746650bfad082679")
+	tag, err := repo.LookupTag(oid)
+	if err != nil {
+		t.Error("err should be nil:", err)
+	} else {
+		if tag.Name() != "taggerless" {
+			t.Error("wrong tag name:", tag.Name())
+		}
+		if tag.TargetType() != ObjectCommit {
+			t.Error("wrong type", tag.TargetType())
+		}
+		if tag.Tagger() != nil {
+			t.Error("tagger should be nil:", tag.Tagger())
+		}
+		if tag.Message() != "" {
+			t.Error("message should be empty:", tag.Message())
+		}
+	}
+
+}

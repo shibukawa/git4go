@@ -23,20 +23,8 @@ func (r *Repository) LookupPrefixTag(oid *Oid, length int) (*Tag, error) {
 	return nil, err
 }
 
-type strList []string
-
-func (s strList) Len() int {
-	return len(s)
-}
-func (s strList) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-func (s strList) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
 func (r *Repository) ListTag() ([]string, error) {
-	var tags strList
+	var tags []string
 	err := r.ForEachReferenceName(func(path string) error {
 		if strings.HasPrefix(path, GitRefsTagsDir) {
 			tags = append(tags, path[len(GitRefsTagsDir)+1:])
@@ -46,17 +34,7 @@ func (r *Repository) ListTag() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	refDb := r.NewRefDb()
-	refs, err := refDb.GetPackedReferences()
-	if refs != nil {
-		for _, ref := range refs {
-			path := ref.Name()
-			if strings.HasPrefix(path, GitRefsTagsDir) {
-				tags = append(tags, path[len(GitRefsTagsDir)+1:])
-			}
-		}
-	}
-	sort.Sort(tags)
+	sort.Strings(tags)
 	return tags, nil
 }
 
@@ -144,15 +122,14 @@ func newTag(repo *Repository, oid *Oid, contents []byte) (*Tag, error) {
 	var tagger *Signature
 	var err error
 	tagger, offset, err = parseSignature(contents, offset, []byte("tagger "))
-	if err != nil {
-		return nil, err
-	}
 	message := ""
-	if offset < len(contents) {
-		if contents[offset] != '\n' {
-			return nil, errors.New("No new line before message")
+	if err == nil {
+		if offset < len(contents) {
+			if contents[offset] != '\n' {
+				return nil, errors.New("No new line before message")
+			}
+			message = string(contents[offset+1:])
 		}
-		message = string(contents[offset+1:])
 	}
 
 	return &Tag{

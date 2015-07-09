@@ -64,49 +64,146 @@ type ForEachReferenceNameCallback func(string) error
 
 func (r *Repository) ForEachReferenceName(callback ForEachReferenceNameCallback) error {
 	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
-	offset := len(r.pathRepository)
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
-		return callback(path[offset:])
-	})
-	return err
-}
-
-type ForEachReferenceCallback func(*Reference) error
-
-func (r *Repository) ForEachReference(callback ForEachReferenceCallback) error {
-	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
-	offset := len(rootDir) - 4
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
-		ref, err := r.LookupReference(path[offset:])
-		if err != nil {
-			return err
-		}
-		return callback(ref)
-	})
-	return err
-}
-
-func (r *Repository) ForEachGlobReferenceName(pattern string, callback ForEachReferenceNameCallback) error {
-	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
+	processed := make(map[string]bool)
 	offset := len(r.pathRepository)
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
 		path = path[offset:]
-		matched, _ := filepath.Match(pattern, path)
-		if matched {
+		processed[path] = true
+		return callback(path)
+	})
+	if err != nil {
+		return err
+	}
+	refDb := r.NewRefDb()
+	refs, err := refDb.GetPackedReferences()
+	if err != nil {
+		return err
+	}
+	for _, ref := range refs {
+		if !processed[ref.name] {
+			err = callback(ref.name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type ForEachReferenceCallback func(*Reference) error
+
+func (r *Repository) ForEachReference(callback ForEachReferenceCallback) error {
+	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
+	processed := make(map[string]bool)
+	offset := len(rootDir) - 4
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		path = path[offset:]
+		ref, err := r.LookupReference(path)
+		if err == nil {
+			processed[path] = true
+			return callback(ref)
+		}
+		return nil  // ignore error
+	})
+	if err != nil {
+		return err
+	}
+	refDb := r.NewRefDb()
+	refs, err := refDb.GetPackedReferences()
+	if err != nil {
+		return err
+	}
+	for _, ref := range refs {
+		if !processed[ref.name] {
+			err = callback(ref)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *Repository) ForEachGlobReferenceName(pattern string, callback ForEachReferenceNameCallback) error {
+	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
+	processed := make(map[string]bool)
+	offset := len(r.pathRepository)
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		path = path[offset:]
+		processed[path] = true
+		if fnMatch(pattern, path, 0) {
 			return callback(path)
 		}
 		return nil
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	refDb := r.NewRefDb()
+	refs, err := refDb.GetPackedReferences()
+	if err != nil {
+		return err
+	}
+	for _, ref := range refs {
+		if !processed[ref.name] {
+			if fnMatch(pattern, ref.name, 0) {
+				err = callback(ref.name)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (r *Repository) ForEachGlobReference(pattern string, callback ForEachReferenceCallback) error {
+	rootDir := filepath.Join(r.pathRepository, GitRefsDir)
+	processed := make(map[string]bool)
+	offset := len(r.pathRepository)
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		path = path[offset:]
+		processed[path] = true
+		if fnMatch(pattern, path, 0) {
+			ref, err := r.LookupReference(path)
+			if err == nil {
+				return callback(ref)
+			}
+			return nil // ignore error
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	refDb := r.NewRefDb()
+	refs, err := refDb.GetPackedReferences()
+	if err != nil {
+		return err
+	}
+	for _, ref := range refs {
+		if !processed[ref.name] {
+			if fnMatch(pattern, ref.name, 0) {
+				err = callback(ref)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // Reference type and its methods
@@ -161,6 +258,38 @@ func (r *Reference) Resolve() (*Reference, error) {
 		return referenceLookupResolved(r.repo, r.targetSymbolic, -1)
 	}
 }
+
+/*type ReferenceIterator struct {
+	repo *Repository
+}
+
+func (repo *Repository) NewReferenceIterator() (*ReferenceIterator, error) {
+
+}
+
+func (repo *Repository) NewReferenceIteratorGlob(glob string) (*ReferenceIterator, error) {
+
+}
+
+func (v *ReferenceIterator) Next() (*Reference, error) {
+
+}
+
+type ReferenceNameIterator struct {
+	repo *Repository
+}
+
+func (repo *Repository) NewReferenceNameIterator() (*ReferenceNameIterator, error) {
+
+}
+
+func (i *ReferenceIterator) Names() *ReferenceNameIterator {
+	return &ReferenceNameIterator{i}
+}
+
+func (v *ReferenceNameIterator) Next() (string, error) {
+
+}*/
 
 // internal functions
 

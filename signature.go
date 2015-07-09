@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	//"log"
 )
 
 func (repo *Repository) DefaultSignature() (*Signature, error) {
@@ -43,11 +44,21 @@ func (v *Signature) Offset() int {
 }
 
 func parseSignature(data []byte, offset int, prefix []byte) (*Signature, int, error) {
+	linePrefix := offset + len(prefix)
 	lineEnd := offset
 	found := false
+	emailStart := -1
+	emailEnd := -1
 	for lineEnd < len(data) {
-		if data[lineEnd] == '\n' {
+		switch data[lineEnd] {
+		case '<':
+			emailStart = lineEnd - linePrefix
+		case '>':
+			emailEnd = lineEnd - linePrefix
+		case '\n':
 			found = true
+		}
+		if found {
 			break
 		}
 		lineEnd++
@@ -58,9 +69,7 @@ func parseSignature(data []byte, offset int, prefix []byte) (*Signature, int, er
 	if !bytes.Equal(data[offset:offset+len(prefix)], prefix) {
 		return nil, offset, errors.New("expected prefix doesn't match actual")
 	}
-	line := data[offset+len(prefix) : lineEnd]
-	emailStart := bytes.IndexByte(line, '<')
-	emailEnd := bytes.IndexByte(line, '>')
+	line := data[linePrefix:lineEnd]
 	if emailStart == -1 || emailEnd == -1 || emailEnd < emailStart {
 		return nil, offset, errors.New("malformed e-mail")
 	}
