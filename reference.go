@@ -109,7 +109,7 @@ func (r *Repository) ForEachReference(callback ForEachReferenceCallback) error {
 			processed[path] = true
 			return callback(ref)
 		}
-		return nil  // ignore error
+		return nil // ignore error
 	})
 	if err != nil {
 		return err
