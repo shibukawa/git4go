@@ -2,6 +2,7 @@ package git4go
 
 import (
 	"bytes"
+	"errors"
 )
 
 func (r *Repository) LookupCommit(oid *Oid) (*Commit, error) {
@@ -63,7 +64,8 @@ func (c Commit) Committer() *Signature {
 }
 
 func (c *Commit) Parent(n int) *Commit {
-	return nil
+	parent, _ := c.repo.LookupCommit(c.Parents[n])
+	return parent
 }
 
 func (c *Commit) ParentId(n int) *Oid {
@@ -75,6 +77,21 @@ func (c *Commit) ParentId(n int) *Oid {
 
 func (c *Commit) ParentCount() int {
 	return len(c.Parents)
+}
+
+func (c *Commit) NthGenAncestor(n uint) (*Commit, error) {
+	if n == 0 {
+		return c, nil
+	}
+	parent := c
+	for n > 0 {
+		n--
+		parent = parent.Parent(0)
+		if parent == nil {
+			return nil, errors.New("can't find parent")
+		}
+	}
+	return parent, nil
 }
 
 func (c *Commit) Amend(refname string, author, committer *Signature, message string, tree *Tree) (*Oid, error) {
