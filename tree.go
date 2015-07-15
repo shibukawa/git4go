@@ -2,10 +2,10 @@ package git4go
 
 import (
 	"errors"
-	"strconv"
+	//"strconv"
 )
 
-type Filemode int
+type Filemode uint32
 
 const (
 	FilemodeTree           Filemode = 0040000
@@ -74,14 +74,8 @@ func newTree(repo *Repository, oid *Oid, contents []byte) (*Tree, error) {
 	var name string
 	for rawOffset < len(contents) {
 		var attr int64
-		for offset := rawOffset; offset < len(contents); offset++ {
-			if contents[offset] == ' ' {
-				attr, _ = strconv.ParseInt(string(contents[rawOffset:offset]), 8, 64)
-				rawOffset = offset + 1
-				break
-			}
-		}
-		if attr == 0 {
+		attr, rawOffset = strtol32(contents, rawOffset, len(contents), 8)
+		if attr == -1 {
 			return nil, errors.New("Tree parse error: attribute")
 		}
 		for offset := rawOffset; offset < len(contents); offset++ {
@@ -146,4 +140,9 @@ func attr2Filemode(attr int64) Filemode {
 		return FilemodeLink
 	}
 	return FilemodeBlob
+}
+
+func validFilemode(mode Filemode) bool {
+	return mode == FilemodeTree || mode == FilemodeBlob ||
+		mode == FilemodeBlobExecutable || mode == FilemodeLink || mode == FilemodeCommit
 }

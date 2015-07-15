@@ -18,6 +18,8 @@ const (
 	GitHeadFile                   string = "HEAD"
 	GitRefsDir                    string = "refs/"
 	GitRefsTagsDir                string = "refs/tags"
+	GitIndexFile                  string = "index"
+	GitIndexFileMode                     = 0666
 )
 
 // Repository type and its methods
@@ -31,6 +33,7 @@ type Repository struct {
 	config         *Config
 	refDb          *RefDb
 	odb            *Odb
+	//index          *Index
 	//cache          *Cache
 }
 

@@ -1,21 +1,36 @@
-// +build windows
+// +build darwin
 
 package git4go
 
+import (
+	"os"
+	"path/filepath"
+)
+
 func guessSystemFile() []string {
-	return []string{}
+	return []string{"/etc"}
 }
 
 func guessGlobalFile() []string {
-	return []string{}
+	return []string{os.Getenv("HOME")}
 }
 
 func guessXDGFile() []string {
-	return []string{}
+	env := os.Getenv("XDG_CONFIG_HOME")
+	if env != "" {
+		return []string{filepath.Join(env, "git")}
+	} else {
+		home := os.Getenv("HOME")
+		if home != "" {
+			return []string{filepath.Join(home, ".config/git")}
+		} else {
+			return []string{}
+		}
+	}
 }
 
 func guessTemplateFile() []string {
-	return []string{}
+	return []string{"/usr/share/git-core/templates"}
 }
 
 var defaultBoolConfig map[string]bool = map[string]bool{
@@ -27,8 +42,8 @@ var defaultBoolConfig map[string]bool = map[string]bool{
 	"core.abbrev":            true,
 	"core.precomposeunicode": true,
 	"core.logallrefupdates":  true,
-	"core.protectHFS":        false,
-	"core.protectNTFS":       true,
+	"core.protectHFS":        true,
+	"core.protectNTFS":       false,
 }
 
 var defaultStringConfig map[string]string = map[string]string{

@@ -134,6 +134,18 @@ func (c *Config) LookupString(name string) (string, error) {
 	return "", errors.New(fmt.Sprintf("Config value '%s' was not found", name))
 }
 
+func (c *Config) LookupStringWithDefaultValue(name string) (string, error) {
+	result, err := c.LookupString(name)
+	if err == nil {
+		return result, nil
+	}
+	result, ok := defaultStringConfig[name]
+	if ok {
+		return result, nil
+	}
+	return "", err
+}
+
 func (c *Config) LookupBool(name string) (bool, error) {
 	keys := strings.SplitN(name, ".", 2)
 	for _, file := range c.files {
@@ -143,6 +155,18 @@ func (c *Config) LookupBool(name string) (bool, error) {
 		}
 	}
 	return false, errors.New(fmt.Sprintf("Config value '%s' was not found", name))
+}
+
+func (c *Config) LookupBooleanWithDefaultValue(name string) (bool, error) {
+	result, err := c.LookupBool(name)
+	if err == nil {
+		return result, nil
+	}
+	result, ok := defaultBoolConfig[name]
+	if ok {
+		return result, nil
+	}
+	return false, err
 }
 
 func (c *Config) SetString(name, value string) (err error) {
