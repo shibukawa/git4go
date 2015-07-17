@@ -2,7 +2,7 @@ package git4go
 
 import (
 	"errors"
-	//"strconv"
+	"path/filepath"
 )
 
 type Filemode uint32
@@ -66,6 +66,12 @@ func (t *Tree) EntryByIndex(index int) *TreeEntry {
 
 func (t *Tree) EntryCount() uint64 {
 	return uint64(len(t.Entries))
+}
+
+type TreeWalkCallback func(root string, entry *TreeEntry) int
+
+func (t *Tree) Walk(callback TreeWalkCallback) error {
+	return treeWalk(t, "", callback)
 }
 
 func newTree(repo *Repository, oid *Oid, contents []byte) (*Tree, error) {
@@ -145,4 +151,27 @@ func attr2Filemode(attr int64) Filemode {
 func validFilemode(mode Filemode) bool {
 	return mode == FilemodeTree || mode == FilemodeBlob ||
 		mode == FilemodeBlobExecutable || mode == FilemodeLink || mode == FilemodeCommit
+}
+
+func treeWalk(t *Tree, root string, callback TreeWalkCallback) error {
+	for _, entry := range t.Entries {
+		result := callback(root, entry)
+		if result < 0 {
+			return errors.New("Tree.Walk is aborted")
+		}
+		if result > 0 {
+			continue
+		}
+		if entry.Type == ObjectTree {
+			childTree, err := t.repo.LookupTree(entry.Id)
+			if err != nil {
+				return err
+			}
+			err = treeWalk(childTree, filepath.Join(root, entry.Name), callback)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

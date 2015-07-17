@@ -53,3 +53,96 @@ func Test_LookupTree(t *testing.T) {
 		}
 	}
 }
+
+func Test_TreeWalk(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo")
+	defer testutil.CleanupWorkspace()
+	repo, _ := OpenRepository("test_resources/testrepo")
+	if repo == nil {
+		t.Error("it should load repository")
+		return
+	}
+	treeOid, _ := NewOid("1810dff58d8a660512d4832e740f692884338ccd")
+	tree, err := repo.LookupTree(treeOid)
+	if err != nil {
+		t.Error("lookup error")
+	}
+	count := 0
+	err = tree.Walk(func(root string, entry *TreeEntry) int {
+		count++
+		return 0
+	})
+	if count != 3 {
+		t.Error("callback should be called:", count)
+	}
+}
+
+func Test_TreeWalkStop(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo")
+	defer testutil.CleanupWorkspace()
+	repo, _ := OpenRepository("test_resources/testrepo")
+	if repo == nil {
+		t.Error("it should load repository")
+		return
+	}
+	treeOid, _ := NewOid("1810dff58d8a660512d4832e740f692884338ccd")
+	tree, err := repo.LookupTree(treeOid)
+	if err != nil {
+		t.Error("lookup error")
+	}
+	count := 0
+	err = tree.Walk(func(root string, entry *TreeEntry) int {
+		count++
+		if count == 2 {
+			return -1
+		}
+		return 0
+	})
+	if count != 2 {
+		t.Error("callback should be called:", count)
+	}
+
+	count = 0
+	err = tree.Walk(func(root string, entry *TreeEntry) int {
+		count++
+		return -1
+	})
+	if count != 1 {
+		t.Error("callback should be called:", count)
+	}
+}
+
+func Test_TreeWalkSkip(t *testing.T) {
+	testutil.PrepareWorkspace("test_resources/testrepo")
+	defer testutil.CleanupWorkspace()
+	repo, _ := OpenRepository("test_resources/testrepo")
+	if repo == nil {
+		t.Error("it should load repository")
+		return
+	}
+	treeOid, _ := NewOid("ae90f12eea699729ed24555e40b9fd669da12a12")
+	tree, err := repo.LookupTree(treeOid)
+	if err != nil {
+		t.Error("lookup error")
+	}
+	dirCount := 0
+	fileCount := 0
+	err = tree.Walk(func(root string, entry *TreeEntry) int {
+		if entry.Type == ObjectTree {
+			dirCount++
+		} else if entry.Type == ObjectBlob {
+			fileCount++
+		}
+		if entry.Name == "de" {
+			return 1
+		} else {
+			return 0
+		}
+	})
+	if dirCount != 3 {
+		t.Error("callback should be called:", dirCount)
+	}
+	if fileCount != 5 {
+		t.Error("callback should be called:", fileCount)
+	}
+}
