@@ -71,7 +71,11 @@ func (t *Tree) EntryCount() uint64 {
 type TreeWalkCallback func(root string, entry *TreeEntry) int
 
 func (t *Tree) Walk(callback TreeWalkCallback) error {
-	return treeWalk(t, "", callback)
+	return treeWalk(t, "", true, callback)
+}
+
+func (t *Tree) WalkPost(callback TreeWalkCallback) error {
+	return treeWalk(t, "", false, callback)
 }
 
 func newTree(repo *Repository, oid *Oid, contents []byte) (*Tree, error) {
@@ -153,23 +157,31 @@ func validFilemode(mode Filemode) bool {
 		mode == FilemodeBlobExecutable || mode == FilemodeLink || mode == FilemodeCommit
 }
 
-func treeWalk(t *Tree, root string, callback TreeWalkCallback) error {
+func treeWalk(t *Tree, root string, pre bool, callback TreeWalkCallback) error {
 	for _, entry := range t.Entries {
-		result := callback(root, entry)
-		if result < 0 {
-			return errors.New("Tree.Walk is aborted")
-		}
-		if result > 0 {
-			continue
+		if pre {
+			result := callback(root, entry)
+			if result < 0 {
+				return errors.New("Tree.Walk is aborted")
+			}
+			if result > 0 {
+				continue
+			}
 		}
 		if entry.Type == ObjectTree {
 			childTree, err := t.repo.LookupTree(entry.Id)
 			if err != nil {
 				return err
 			}
-			err = treeWalk(childTree, filepath.Join(root, entry.Name), callback)
+			err = treeWalk(childTree, filepath.Join(root, entry.Name), pre, callback)
 			if err != nil {
 				return err
+			}
+		}
+		if !pre {
+			result := callback(root, entry)
+			if result < 0 {
+				return errors.New("Tree.Walk is aborted")
 			}
 		}
 	}
