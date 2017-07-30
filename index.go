@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/shibukawa/bsearch"
+	"github.com/shibukawa/extstat"
 	"io/ioutil"
 	"log"
 	"os"
@@ -85,7 +86,7 @@ type Index struct {
 	repo             *Repository
 	filePath         string
 	stamp            int64
-	entries          []*IndexEntry
+	Entries          []*IndexEntry
 	entriesSorted    bool
 	lock             sync.Mutex
 	deleted          []*IndexEntry
@@ -161,7 +162,7 @@ func NewIndex() (*Index, error) {
 func OpenIndex(path string) (*Index, error) {
 	index := &Index{
 		filePath: path,
-		entries:  make([]*IndexEntry, 0, 32),
+		Entries:  make([]*IndexEntry, 0, 32),
 		names:    make([]*IndexNameEntry, 0, 8),
 		reuc:     make([]*IndexReucEntry, 0, 8),
 		deleted:  make([]*IndexEntry, 0, 8),
@@ -238,7 +239,7 @@ func (v *Index) Read(force bool) error {
 		var entry *IndexEntry
 		offset, entry = readEntry(buffer, offset)
 		if entry != nil {
-			v.entries = append(v.entries, entry)
+			v.Entries = append(v.Entries, entry)
 		}
 	}
 	if i != entryCount {
@@ -268,7 +269,7 @@ func (v *Index) Clear() error {
 	defer v.lock.Unlock()
 
 	v.tree = nil
-	v.entries = make([]*IndexEntry, 0, 32)
+	v.Entries = make([]*IndexEntry, 0, 32)
 	v.names = make([]*IndexNameEntry, 0, 8)
 	v.reuc = make([]*IndexReucEntry, 0, 8)
 	v.deleted = make([]*IndexEntry, 0, 8)
@@ -282,17 +283,29 @@ func (v *Index) Add(entry *IndexEntry) error {
 	if !validFilemode(entry.Mode) {
 		return errors.New("invalid filemode")
 	}
-	v.entries = append(v.entries, entry)
+	v.Entries = append(v.Entries, entry)
 	v.entriesSorted = false
 	v.tree.invalidatePath(entry.Path)
 	return nil
 }
 
 func (v *Index) AddByPath(path string) error {
-	entry := &IndexEntry{
-		Path: path,
+	// begin: index_entry_init
+	if v.Owner() == nil {
+		errors.New("Could not initialize index entry. Index is not backed up by an existing repository.")
 	}
-	v.entries = append(v.entries, entry)
+	entry, err := indexEntryCreate(v.repo, path)
+	if err != nil {
+		return err
+	}
+	oid, stat, err := createBlobCreateFromPaths(v.Owner(), "", path, 0, true)
+	if err != nil {
+		return err
+	}
+	entry.Id = oid
+
+	// end: index_entry_init
+	v.Entries = append(v.Entries, entry)
 	v.entriesSorted = false
 	err := conflictToReuc(v, path)
 	if err != nil {
@@ -300,6 +313,37 @@ func (v *Index) AddByPath(path string) error {
 	}
 	v.tree.invalidatePath(path)
 	return nil
+}
+
+func indexEntryInitFromStat(entry *IndexEntry, stat os.FileInfo, mode Filemode) {
+	extStat := extstat.New(stat)
+	entry.Mtime = stat.ModTime()
+	entry.Ctime = extStat.ChangeTime
+	//entry.Dev = stat.Dev
+	//entry.Uid = stat.Uid
+	//entry.Gid = stat.Gid
+	entry.Size = stat.Size()
+}
+
+func indexEntryCreate(repo *Repository, path string) (*IndexEntry, error) {
+	if !repo.IsPathValid(path) {
+		return nil, errors.New(fmt.Sprintf("Invalid path: '%s'", path))
+	}
+	entry := &IndexEntry{
+		Path: path,
+	}
+	return entry, nil
+}
+
+// todo: not implemented yet
+func (r *Repository) IsPathValid(name string) bool {
+	return true
+}
+
+//todo: not implemented yet
+func (v *Index) AddFromBuffer(sourceEntry *IndexEntry, buffer []byte) error {
+	return nil
+
 }
 
 func conflictToReuc(v *Index, path string) error {
@@ -464,9 +508,9 @@ func (v *Index) ReadTree(tree *Tree) error {
 			Mode: treeEntry.Filemode,
 			Id:   treeEntry.Id,
 		}
-		pos := v.findInEntries(v.entries, path, 0, false)
+		pos := v.findInEntries(v.Entries, path, 0, false)
 		if pos != -1 {
-			oldEntry := v.entries[pos]
+			oldEntry := v.Entries[pos]
 			if oldEntry.Mode == entry.Mode && oldEntry.Id.Equal(entry.Id) {
 				entry.Ctime = oldEntry.Ctime
 				entry.Mtime = oldEntry.Mtime
@@ -495,7 +539,7 @@ func (v *Index) ReadTree(tree *Tree) error {
 		var entries indexEntriesCaseSensitive = newEntries
 		sort.Sort(entries)
 	}
-	v.entries = newEntries
+	v.Entries = newEntries
 	return nil
 }
 
@@ -510,17 +554,17 @@ func (v *Index) Write() error {
 }
 
 func (v *Index) EntryCount() uint {
-	return uint(len(v.entries))
+	return uint(len(v.Entries))
 }
 
 func (v Index) Owner() *Repository {
 	return v.repo
 }
 
-func (v *Index) EntryByIndex(index uint) (*IndexEntry, error) {
+func (v *Index) EntryByIndex(index int) (*IndexEntry, error) {
 	v.sortEntriesIfNeeded(v.ignoreCase, true)
-	if int(index) < len(v.entries) {
-		return v.entries[index], nil
+	if -1 < index && index < len(v.Entries) {
+		return v.Entries[index], nil
 	}
 	return nil, errors.New("out of index")
 }
@@ -532,8 +576,8 @@ func (v *Index) Find(path string) int {
 	var pos int
 	if v.ignoreCase {
 		path = strings.ToLower(path)
-		pos = bsearch.Search(len(v.entries), func(i int) bsearch.CompareResult {
-			pathInList := strings.ToLower(v.entries[i].Path)
+		pos = bsearch.Search(len(v.Entries), func(i int) bsearch.CompareResult {
+			pathInList := strings.ToLower(v.Entries[i].Path)
 			if path > pathInList {
 				return bsearch.Smaller
 			} else if path == pathInList {
@@ -547,13 +591,13 @@ func (v *Index) Find(path string) int {
 		}
 		// search the head element that has the specified path
 		for ; pos > 0; pos-- {
-			if strings.ToLower(v.entries[pos-1].Path) != path {
+			if strings.ToLower(v.Entries[pos-1].Path) != path {
 				return pos
 			}
 		}
 	} else {
 		pos = bsearch.Search(len(v.reuc), func(i int) bsearch.CompareResult {
-			pathInList := v.entries[i].Path
+			pathInList := v.Entries[i].Path
 			if path > pathInList {
 				return bsearch.Smaller
 			} else if path == pathInList {
@@ -567,7 +611,7 @@ func (v *Index) Find(path string) int {
 		}
 		// search the head element that has the specified path
 		for ; pos > 0; pos-- {
-			if v.entries[pos-1].Path != path {
+			if v.Entries[pos-1].Path != path {
 				return pos
 			}
 		}
@@ -604,11 +648,11 @@ func (v *Index) findInEntries(entries []*IndexEntry, path string, stage IndexSta
 
 func (v *Index) sortAndFindInEntries(path string, stage IndexStage, needLock bool) int {
 	v.sortEntriesIfNeeded(v.ignoreCase, needLock)
-	return v.findInEntries(v.entries, path, stage, v.ignoreCase)
+	return v.findInEntries(v.Entries, path, stage, v.ignoreCase)
 }
 
 func (v *Index) HasConflicts() bool {
-	for _, entry := range v.entries {
+	for _, entry := range v.Entries {
 		if entry.Stage() != 0 {
 			return false
 		}
@@ -620,6 +664,7 @@ func (v *Index) HasConflicts() bool {
 func (v *Index) CleanupConflicts() {
 }
 
+// todo: not implemented yet
 func (v *Index) AddConflict(ancestor *IndexEntry, our *IndexEntry, their *IndexEntry) error {
 	return nil
 }
@@ -642,6 +687,7 @@ func (v *Index) GetConflict(path string) (IndexConflict, error) {
 	return conflict, nil
 }
 
+// todo: not implemented yet
 func (v *Index) RemoveConflict(path string) error {
 	return nil
 }
@@ -676,8 +722,8 @@ func (v *Index) ConflictIterator() (*IndexConflictIterator, error) {
 }
 
 func (v *IndexConflictIterator) Next() (IndexConflict, error) {
-	for v.cursor < len(v.index.entries) {
-		entry := v.index.entries[v.cursor]
+	for v.cursor < len(v.index.Entries) {
+		entry := v.index.Entries[v.cursor]
 		if entry.IsConflict() {
 			conflict, length := v.index.getConflictByIndex(v.cursor)
 			v.cursor += length
@@ -692,7 +738,7 @@ func (v *Index) getConflictByIndex(pos int) (IndexConflict, int) {
 	var path string
 	length := 0
 	result := IndexConflict{}
-	for _, entry := range v.entries[pos:] {
+	for _, entry := range v.Entries[pos:] {
 		if path != "" && entry.Path != path {
 			break
 		}
@@ -789,10 +835,10 @@ func (v *Index) sortEntriesIfNeeded(ignoreCase, lock bool) {
 		defer v.lock.Unlock()
 	}
 	if ignoreCase {
-		var entries indexEntriesCaseInSensitive = v.entries
+		var entries indexEntriesCaseInSensitive = v.Entries
 		sort.Sort(entries)
 	} else {
-		var entries indexEntriesCaseSensitive = v.entries
+		var entries indexEntriesCaseSensitive = v.Entries
 		sort.Sort(entries)
 	}
 }
@@ -969,9 +1015,9 @@ func readExtension(index *Index, buffer []byte, offset int) int {
 }
 
 func (v *Index) removeEntry(pos int) error {
-	entry := v.entries[pos]
+	entry := v.Entries[pos]
 	v.tree.invalidatePath(entry.Path)
-	v.entries = append(v.entries[:pos], v.entries[pos+1:]...)
+	v.Entries = append(v.Entries[:pos], v.Entries[pos+1:]...)
 	if v.readers > 0 {
 		v.deleted = append(v.deleted, entry)
 	}

@@ -7,15 +7,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"strconv"
 )
 
 type ConfigLevel int
 
 const (
-	GIT_CONFIG_FILENAME_SYSTEM string = "gitconfig"
-	GIT_CONFIG_FILENAME_GLOBAL string = ".gitconfig"
-	GIT_CONFIG_FILENAME_XDG    string = "config"
-	GIT_CONFIG_FILENAME_INREPO string = "config"
+	ConfigFileNameSystem string = "gitconfig"
+	ConfigFileNameGlobal string = ".gitconfig"
+	ConfigFileNameXDG    string = "config"
+	ConfigFileNameInrepo string = "config"
 
 	ConfigLevelSystem  ConfigLevel = 1
 	ConfigLevelXDG     ConfigLevel = 2
@@ -24,6 +25,8 @@ const (
 	ConfigLevelApp     ConfigLevel = 5
 	ConfigLevelHighest ConfigLevel = -1
 )
+
+// todo: implement cache
 
 /*type ConfigEntry struct {
 	Name  string
@@ -36,7 +39,7 @@ const (
 func (repo *Repository) Config() *Config {
 	if repo.config == nil {
 		config, _ := NewConfig()
-		path := filepath.Join(repo.pathRepository, GIT_CONFIG_FILENAME_INREPO)
+		path := filepath.Join(repo.pathRepository, ConfigFileNameInrepo)
 		_, err := os.Stat(path)
 		if !os.IsNotExist(err) {
 			err = config.AddFile(path, ConfigLevelLocal, false)
@@ -170,29 +173,43 @@ func (c *Config) LookupBooleanWithDefaultValue(name string) (bool, error) {
 }
 
 func (c *Config) SetString(name, value string) (err error) {
+	if len(c.files) > 0 && c.files[0].level == ConfigLevelLocal {
+		file := c.files[0].file
+		keys := strings.SplitN(name, ".", 2)
+		file.SetValue(keys[0], keys[1], value)
+		path, err := ConfigFindGlobal()
+		if err != nil {
+			return err
+		}
+		goconfig.SaveConfigFile(file, path)
+	}
 	return nil
 }
 
 func (c *Config) SetInt32(name string, value int32) (err error) {
-	return nil
+	return c.SetString(name, strconv.Itoa(int(value)))
 }
 
 func (c *Config) SetInt64(name string, value int64) (err error) {
-	return nil
+	return c.SetString(name, strconv.Itoa(int(value)))
 }
 
 func (c *Config) SetBool(name string, value bool) (err error) {
-	return nil
+	if value {
+		return c.SetString(name, "true")
+	} else {
+		return c.SetString(name, "false")
+	}
 }
 
 func ConfigFindGlobal() (string, error) {
-	return findInDirList(GIT_CONFIG_FILENAME_GLOBAL, "global")
+	return findInDirList(ConfigFileNameGlobal, "global")
 }
 
 func ConfigFindSystem() (string, error) {
-	return findInDirList(GIT_CONFIG_FILENAME_SYSTEM, "system")
+	return findInDirList(ConfigFileNameSystem, "system")
 }
 
 func ConfigFindXDG() (string, error) {
-	return findInDirList(GIT_CONFIG_FILENAME_XDG, "global/xdg")
+	return findInDirList(ConfigFileNameXDG, "global/xdg")
 }

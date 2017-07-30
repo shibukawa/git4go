@@ -3,8 +3,13 @@ package git4go
 type ErrorCode int
 
 const (
-	// Signals end of iteration with iterator
+	// Requested object could not be found
 	ErrNotFound ErrorCode = -3
+	// Operation not allowed on bare repository
+	ErrBareRepository ErrorCode = -8
+	// The operation is not valid for a directory
+	ErrDirectory ErrorCode = -23
+	// Signals end of iteration with iterator
 	ErrIterOver ErrorCode = -31
 )
 
