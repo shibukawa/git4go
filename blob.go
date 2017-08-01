@@ -1,9 +1,10 @@
 package git4go
+
 import (
-	"os"
 	"errors"
-	"path/filepath"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 func (r *Repository) LookupBlob(oid *Oid) (*Blob, error) {
@@ -69,7 +70,7 @@ func newBlob(repo *Repository, oid *Oid, contents []byte) *Blob {
 
 func createBlobCreateFromPaths(repo *Repository, contentPath, hintPath string, hintMode Filemode, tryLoadFilters bool) (*Oid, os.FileInfo, error) {
 	if hintPath == "" && tryLoadFilters {
-		return nil, 0, errors.New("Assertion error")
+		return nil, nil, errors.New("Assertion error")
 	}
 	if contentPath == "" {
 		if repo.IsBare() {
@@ -84,15 +85,8 @@ func createBlobCreateFromPaths(repo *Repository, contentPath, hintPath string, h
 	if stat.IsDir() {
 		return nil, nil, MakeGitError("Content path should not be dir", ErrDirectory)
 	}
-	odb, err := repo.Odb()
-	if err != nil {
+	if _, err := repo.Odb(); err != nil {
 		return nil, nil, err
-	}
-	var mode Filemode
-	if hintMode != 0 {
-		mode = hintMode
-	} else {
-		mode = Filemode(stat.Mode())
 	}
 	var oid *Oid
 	if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
