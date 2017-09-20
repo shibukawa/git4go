@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/shibukawa/bsearch"
-	"github.com/shibukawa/extstat"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/shibukawa/bsearch"
+	"github.com/shibukawa/extstat"
 )
 
 type IndexMatchedPathCallback func(string, string) IndexMatchResult
@@ -298,7 +299,7 @@ func (v *Index) AddByPath(path string) error {
 	if err != nil {
 		return err
 	}
-	oid, stat, err := createBlobCreateFromPaths(v.Owner(), "", path, 0, true)
+	oid, _, err := createBlobCreateFromPaths(v.Owner(), "", path, 0, true)
 	if err != nil {
 		return err
 	}
@@ -307,8 +308,7 @@ func (v *Index) AddByPath(path string) error {
 	// end: index_entry_init
 	v.Entries = append(v.Entries, entry)
 	v.entriesSorted = false
-	err := conflictToReuc(v, path)
-	if err != nil {
+	if err := conflictToReuc(v, path); err != nil {
 		return err
 	}
 	v.tree.invalidatePath(path)
@@ -322,7 +322,7 @@ func indexEntryInitFromStat(entry *IndexEntry, stat os.FileInfo, mode Filemode) 
 	//entry.Dev = stat.Dev
 	//entry.Uid = stat.Uid
 	//entry.Gid = stat.Gid
-	entry.Size = stat.Size()
+	entry.Size = uint32(stat.Size())
 }
 
 func indexEntryCreate(repo *Repository, path string) (*IndexEntry, error) {
